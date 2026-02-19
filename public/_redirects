@@ -1,0 +1,5 @@
+/*  Cloudflare Pages — SPA fallback routing
+    모든 경로를 index.html로 리다이렉트해 React Router가 처리하도록 한다  */
+/*  :splat  200  */
+/*  위 형식은 Cloudflare Pages 전용이므로 아래를 사용한다  */
+/index.html  200
