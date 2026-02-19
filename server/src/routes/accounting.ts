@@ -14,7 +14,7 @@ import {
   listReceipts,
   updateReceiptStatus,
   getLedgerSummary,
-} from '../lib/db.js';
+} from '../lib/db-supabase.js';
 import type { LedgerEntry } from '../types.js';
 
 export async function accountingRoutes(app: FastifyInstance) {
@@ -22,7 +22,7 @@ export async function accountingRoutes(app: FastifyInstance) {
   // ── Ledger ────────────────────────────────────────────────
 
   app.get('/api/accounting/ledger', async (_req, reply) => {
-    const entries = listLedgerEntries(100);
+    const entries = await listLedgerEntries(100);
     return reply.send(entries);
   });
 
@@ -38,14 +38,14 @@ export async function accountingRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'type must be income or expense' });
     }
 
-    const entry = insertLedgerEntry({ date, description, category, amount, type, receiptId });
+    const entry = await insertLedgerEntry({ date, description, category, amount, type, receiptId });
     return reply.code(201).send(entry);
   });
 
   // ── Receipts ──────────────────────────────────────────────
 
   app.get('/api/accounting/receipts', async (_req, reply) => {
-    const receipts = listReceipts(50);
+    const receipts = await listReceipts(50);
     return reply.send(receipts);
   });
 
@@ -54,7 +54,7 @@ export async function accountingRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const id = Number(req.params.id);
       if (isNaN(id)) return reply.code(400).send({ error: 'Invalid id' });
-      updateReceiptStatus(id, 'verified');
+      await updateReceiptStatus(id, 'verified');
       return reply.send({ ok: true });
     }
   );
@@ -62,7 +62,7 @@ export async function accountingRoutes(app: FastifyInstance) {
   // ── Summary ───────────────────────────────────────────────
 
   app.get('/api/accounting/summary', async (_req, reply) => {
-    const summary = getLedgerSummary();
+    const summary = await getLedgerSummary();
     return reply.send(summary);
   });
 }

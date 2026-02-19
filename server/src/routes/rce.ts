@@ -22,18 +22,18 @@ import {
   listRceLogs,
   estimateCurrentKm,
   MAINTENANCE_INTERVALS,
-} from '../lib/db.js';
+} from '../lib/db-supabase.js';
 import { runRceCampaign, sendRceSms } from '../lib/scheduler.js';
 
 export async function rceRoutes(fastify: FastifyInstance) {
 
   // GET /api/rce/vehicles
   fastify.get('/api/rce/vehicles', async (_req, reply) => {
-    const vehicles = listVehicles();
-    return reply.send(vehicles.map(v => ({
+    const vehicles = await listVehicles();
+    return reply.send(await Promise.all(vehicles.map(async v => ({
       ...v,
       estimatedKm: estimateCurrentKm(v),
-    })));
+    }))));
   });
 
   // POST /api/rce/vehicles  — register or update vehicle
@@ -55,7 +55,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const vehicle = upsertVehicle({
+    const vehicle = await upsertVehicle({
       ownerName,
       ownerPhone,
       vehicleModel,
@@ -73,11 +73,11 @@ export async function rceRoutes(fastify: FastifyInstance) {
 
   // GET /api/rce/vehicles/:phone  — full status including maintenance predictions
   fastify.get<{ Params: { phone: string } }>('/api/rce/vehicles/:phone', async (req, reply) => {
-    const vehicle = getVehicleByPhone(req.params.phone);
+    const vehicle = await getVehicleByPhone(req.params.phone);
     if (!vehicle) return reply.status(404).send({ error: 'Vehicle not found' });
 
     const { km: estimatedKm, tier } = estimateCurrentKm(vehicle);
-    const maintenanceStatus = getMaintenanceStatus(vehicle);
+    const maintenanceStatus = await getMaintenanceStatus(vehicle);
 
     return reply.send({
       vehicle,
@@ -99,7 +99,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
     Params: { phone: string };
     Body: { currentKm: number; services?: string[] }; // services done this visit
   }>('/api/rce/vehicles/:phone/visit', async (req, reply) => {
-    const vehicle = getVehicleByPhone(req.params.phone);
+    const vehicle = await getVehicleByPhone(req.params.phone);
     if (!vehicle) return reply.status(404).send({ error: 'Vehicle not found' });
 
     const today = new Date().toISOString().split('T')[0];
@@ -110,7 +110,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
     }
 
     // Update vehicle with new reading
-    const updated = upsertVehicle({
+    const updated = await upsertVehicle({
       ...vehicle,
       lastVisitKm: currentKm,
       lastVisitDate: today,
@@ -118,7 +118,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
 
     // Record any services done during this visit
     for (const itemKey of services) {
-      recordService(vehicle.id, itemKey, currentKm);
+      await recordService(vehicle.id, itemKey, currentKm);
     }
 
     const { km: estimatedKm, tier } = estimateCurrentKm(updated);
@@ -140,7 +140,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'phone, itemKey, doneAtKm required' });
     }
 
-    const vehicle = getVehicleByPhone(phone);
+    const vehicle = await getVehicleByPhone(phone);
     if (!vehicle) return reply.status(404).send({ error: 'Vehicle not found' });
 
     const interval = MAINTENANCE_INTERVALS[itemKey];
@@ -150,7 +150,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
       });
     }
 
-    recordService(vehicle.id, itemKey, doneAtKm);
+    await recordService(vehicle.id, itemKey, doneAtKm);
     return reply.send({
       ok: true,
       vehicleId: vehicle.id,
@@ -164,7 +164,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   // GET /api/rce/due  — vehicles due for maintenance notification
   fastify.get<{ Querystring: { threshold?: string } }>('/api/rce/due', async (req, reply) => {
     const threshold = parseInt(req.query.threshold ?? '1500', 10);
-    const targets = getVehiclesDueForAlert(threshold);
+    const targets = await getVehiclesDueForAlert(threshold);
     return reply.send({
       count: targets.length,
       thresholdKm: threshold,
@@ -182,7 +182,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   // GET /api/rce/logs
   fastify.get<{ Querystring: { limit?: string } }>('/api/rce/logs', async (req, reply) => {
     const limit = parseInt(req.query.limit ?? '50', 10);
-    return reply.send(listRceLogs(limit));
+    return reply.send(await listRceLogs(limit));
   });
 
   // POST /api/rce/run  — manual campaign trigger

@@ -14,6 +14,10 @@ export const env = {
   AI_GREETING: process.env.AI_GREETING ?? '안녕하세요, 무엇을 도와드릴까요?',
   AI_VOICE: (process.env.AI_VOICE ?? 'marin') as 'marin' | 'cedar' | 'coral' | 'sage',
   AI_MODEL: process.env.AI_MODEL ?? 'gpt-4o-realtime-preview',
+
+  // Supabase (PostgreSQL)
+  SUPABASE_URL: process.env.SUPABASE_URL ?? '',
+  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ?? '',
 } as const;
 
 function requireEnv(key: string): string {

@@ -9,14 +9,14 @@ import type { FastifyInstance } from 'fastify';
 import OpenAI from 'openai';
 import { env } from '../config.js';
 import type { OcrResult } from '../types.js';
-import { insertReceipt, insertLedgerEntry } from '../lib/db.js';
+import { insertReceipt, insertLedgerEntry } from '../lib/db-supabase.js';
 
 /**
  * Save OCR result to DB: receipts + auto-add as expense ledger entry.
  */
-function saveReceiptToDB(result: OcrResult): void {
+async function saveReceiptToDB(result: OcrResult): Promise<void> {
   try {
-    const receipt = insertReceipt({
+    const receipt = await insertReceipt({
       vendor: result.vendor,
       amount: result.amount,
       date: result.date,
@@ -25,7 +25,7 @@ function saveReceiptToDB(result: OcrResult): void {
       status: 'pending',
     });
     // Auto-create expense ledger entry
-    insertLedgerEntry({
+    await insertLedgerEntry({
       date: result.date,
       description: `[OCR] ${result.vendor}`,
       category: result.category ?? '기타',
@@ -51,7 +51,7 @@ export async function ocrRoutes(app: FastifyInstance) {
 
       if (env.MOCK_MODE || !env.OPENAI_API_KEY) {
         const mock = mockOcrResult();
-        saveReceiptToDB(mock);
+        await saveReceiptToDB(mock);
         return reply.send(mock);
       }
 
@@ -66,17 +66,7 @@ export async function ocrRoutes(app: FastifyInstance) {
               content: [
                 {
                   type: 'text',
-                  text: `이 영수증 이미지를 분석하여 다음 JSON 형식으로 반환하세요. 카테고리는 [부품매입, 소모품, 공구/설비, 식대, 기타] 중 하나를 선택하세요.
-{
-  "vendor": "상호명",
-  "amount": 총금액(숫자, 부가세포함),
-  "date": "YYYY-MM-DD",
-  "category": "카테고리",
-  "items": [
-    { "name": "품목명", "quantity": 수량(숫자), "totalPrice": 금액(숫자) }
-  ]
-}
-반드시 유효한 JSON만 반환하세요.`,
+                  text: `이 영수증 이미지를 분석하여 다음 JSON 형식으로 반환하세요. 카테고리는 [부품매입, 소모품, 공구/설비, 식대, 기타] 중 하나를 선택하세요.\n{\n  "vendor": "상호명",\n  "amount": 총금액(숫자, 부가세포함),\n  "date": "YYYY-MM-DD",\n  "category": "카테고리",\n  "items": [\n    { "name": "품목명", "quantity": 수량(숫자), "totalPrice": 금액(숫자) }\n  ]\n}\n반드시 유효한 JSON만 반환하세요.`,
                 },
                 {
                   type: 'image_url',
@@ -102,7 +92,7 @@ export async function ocrRoutes(app: FastifyInstance) {
           raw,
         };
 
-        saveReceiptToDB(result);
+        await saveReceiptToDB(result);
         return reply.send(result);
       } catch (err) {
         app.log.error(err, 'OCR failed');

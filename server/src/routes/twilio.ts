@@ -11,6 +11,7 @@ import { WebSocket } from 'ws';
 import { env } from '../config.js';
 import { createBridgeSession, type BridgeSession } from '../lib/bridge.js';
 import { generateCallSummary } from '../lib/summary.js';
+import { checkAvailability, createBooking, getVehicleByPhone, getMaintenanceStatus } from '../lib/db-supabase.js';
 
 // In-memory call store (replace with DB in production)
 const activeCalls = new Map<string, BridgeSession>();
@@ -29,15 +30,7 @@ export async function twilioRoutes(app: FastifyInstance) {
 
     const streamUrl = `wss://${new URL(env.SERVER_URL).host}/twilio/stream`;
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Connect>
-    <Stream url="${streamUrl}">
-      <Parameter name="callSid" value="${callSid}" />
-      <Parameter name="callerPhone" value="${callerPhone}" />
-    </Stream>
-  </Connect>
-</Response>`;
+    const twiml = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response>\n  <Connect>\n    <Stream url=\"${streamUrl}\">\n      <Parameter name=\"callSid\" value=\"${callSid}\" />\n      <Parameter name=\"callerPhone\" value=\"${callerPhone}\" />\n    </Stream>\n  </Connect>\n</Response>`;
 
     reply.type('text/xml').send(twiml);
   });
@@ -58,7 +51,7 @@ export async function twilioRoutes(app: FastifyInstance) {
       const call = await client.calls.create({
         to: req.body.to,
         from: env.TWILIO_PHONE_NUMBER,
-        twiml: `<Response><Say language="ko-KR">${req.body.message}</Say></Response>`,
+        twiml: `<Response><Say language=\"ko-KR\">${req.body.message}</Say></Response>`,
       });
 
       return reply.send({ success: true, callSid: call.sid });
@@ -267,13 +260,14 @@ async function connectToOpenAI(
         console.log(`[AI Tool Call] ${name}`, args);
 
         try {
-          const { checkAvailability, createBooking, getVehicleByPhone, getMaintenanceStatus } = await import('../lib/db.js');
+          // const { checkAvailability, createBooking, getVehicleByPhone, getMaintenanceStatus } = await import('../lib/db.js'); // Removed
+          // Functions are now imported directly at the top of the file from db-supabase.js
 
           if (name === 'check_availability') {
-            const available = checkAvailability(args.date, args.time);
+            const available = await checkAvailability(args.date, args.time);
             output = { date: args.date, time: args.time, available };
           } else if (name === 'create_booking') {
-            const booking = createBooking({
+            const booking = await createBooking({
               ownerName: args.ownerName,
               ownerPhone: args.ownerPhone,
               vehicleModel: args.vehicleModel,
@@ -284,9 +278,9 @@ async function connectToOpenAI(
             });
             output = { success: true, bookingId: booking.id };
           } else if (name === 'get_customer_history') {
-            const vehicle = getVehicleByPhone(args.phone);
+            const vehicle = await getVehicleByPhone(args.phone);
             if (vehicle) {
-              const status = getMaintenanceStatus(vehicle);
+              const status = await getMaintenanceStatus(vehicle);
               output = { found: true, vehicleModel: vehicle.vehicleModel, status };
             } else {
               output = { found: false, message: '신규 고객입니다.' };
@@ -356,24 +350,7 @@ async function connectToOpenAI(
 
 // ===== Helpers =====
 function buildSystemPrompt(callerPhone: string): string {
-  return `당신은 자동차 정비소 '오토메이트(AutoMate)'의 AI 전화 비서 'BizPilot'입니다.
-역할:
-- 고객의 전화를 받아 친절하게 응대합니다.
-- 엔진오일 교환, 타이어 교체, 일반 점검 등 정비 예약 요청을 받아 날짜/시간을 확인합니다.
-- 차종과 차량 번호를 확인하여 정확한 부품 준비를 돕습니다.
-- 영업시간(평일 09:00~19:00, 토요일 09:00~15:00) 문의에 답변합니다.
-- 모든 대화를 한국어로 진행합니다.
-
-현재 전화 고객 번호: ${callerPhone}
-오늘 날짜: ${new Date().toLocaleDateString('ko-KR')}
-
-응대 규칙:
-- 항상 공손하고 전문가다운 태도로 말하세요.
-- 예약 가능 여부를 물어보면 반드시 'check_availability' 도구를 사용하여 확인 후 답변하세요.
-- 예약이 확정되면 'create_booking' 도구를 사용하여 DB에 저장하세요.
-- 단골 고객인지 확인하려면 'get_customer_history' 도구를 사용하세요. 이를 통해 소모품 교체 주기가 임박한 항목(urgent=true)이 있다면 정비 예약 시 함께 추천하세요 (RCE 전략).
-- 견적 문의 시 "현장 점검 후 정확한 금액 안내가 가능함"을 고지하되, 대략적인 공임비를 안내할 수 있습니다.
-- 통화는 핵심 위주로 간결하게 진행하세요.`;
+  return `당신은 자동차 정비소 '오토메이트(AutoMate)'의 AI 전화 비서 'BizPilot'입니다.\n역할:\n- 고객의 전화를 받아 친절하게 응대합니다.\n- 엔진오일 교환, 타이어 교체, 일반 점검 등 정비 예약 요청을 받아 날짜/시간을 확인합니다.\n- 차종과 차량 번호를 확인하여 정확한 부품 준비를 돕습니다.\n- 영업시간(평일 09:00~19:00, 토요일 09:00~15:00) 문의에 답변합니다.\n- 모든 대화를 한국어로 진행합니다.\n\n현재 전화 고객 번호: ${callerPhone}\n오늘 날짜: ${new Date().toLocaleDateString('ko-KR')}\n\n응대 규칙:\n- 항상 공손하고 전문가다운 태도로 말하세요.\n- 예약 가능 여부를 물어보면 반드시 'check_availability' 도구를 사용하여 확인 후 답변하세요.\n- 예약이 확정되면 'create_booking' 도구를 사용하여 DB에 저장하세요.\n- 단골 고객인지 확인하려면 'get_customer_history' 도구를 사용하세요. 이를 통해 소모품 교체 주기가 임박한 항목(urgent=true)이 있다면 정비 예약 시 함께 추천하세요 (RCE 전략).\n- 견적 문의 시 \"현장 점검 후 정확한 금액 안내가 가능함\"을 고지하되, 대략적인 공임비를 안내할 수 있습니다.\n- 통화는 핵심 위주로 간결하게 진행하세요.`;
 }
 
 function enkode(text: string): string {

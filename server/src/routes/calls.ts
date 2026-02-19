@@ -10,8 +10,8 @@ import type { FastifyInstance } from 'fastify';
 import OpenAI from 'openai';
 import { env } from '../config.js';
 import type { TranscriptEntry, CallRecord } from '../types.js';
-import { insertCallRecord, listCallRecords, getCallRecord } from '../lib/db.js';
-import { upsertRceCustomer } from '../lib/db.js';
+import { insertCallRecord, listCallRecords, getCallRecord } from '../lib/db-supabase.js';
+import { upsertRceCustomer } from '../lib/db-supabase.js';
 
 // In-memory store for ACTIVE calls only
 const activeCallStore: Map<string, CallRecord> = new Map();
@@ -20,7 +20,7 @@ export async function callsApiRoutes(app: FastifyInstance) {
 
   /** GET /api/calls */
   app.get('/', async () => {
-    const dbRecords = listCallRecords(50);
+    const dbRecords = await listCallRecords(50);
     const activeRecords = Array.from(activeCallStore.values());
 
     // Merge: active calls take precedence
@@ -38,7 +38,7 @@ export async function callsApiRoutes(app: FastifyInstance) {
     const id = req.params.id;
     const active = activeCallStore.get(id);
     if (active) return active;
-    const db = getCallRecord(id);
+    const db = await getCallRecord(id);
     if (!db) return reply.code(404).send({ error: 'Call not found' });
     return db;
   });
@@ -70,8 +70,7 @@ export async function callsApiRoutes(app: FastifyInstance) {
         messages: [
           {
             role: 'system',
-            content: `당신은 AI 전화 비서의 코파일럿입니다. 현재 통화 맥락을 보고 비서가 할 수 있는 최선의 다음 행동 3가지를 제안하세요.
-응답 형식: JSON { "suggestions": ["제안1", "제안2", "제안3"] }`,
+            content: `당신은 AI 전화 비서의 코파일럿입니다. 현재 통화 맥락을 보고 비서가 할 수 있는 최선의 다음 행동 3가지를 제안하세요.\n응답 형식: JSON { \"suggestions\": [\"제안1\", \"제안2\", \"제안3\"] }`,
           },
           { role: 'user', content: context },
         ],
@@ -140,12 +139,12 @@ export async function callsApiRoutes(app: FastifyInstance) {
       summary: req.body?.summary ?? active.summary,
     };
 
-    // Persist to SQLite
-    insertCallRecord(finalized);
+    // Persist to Supabase
+    await insertCallRecord(finalized);
 
     // Auto-register caller as RCE customer if phone is real
     if (!active.callerPhone.includes('시뮬레이션') && active.callerPhone.startsWith('0')) {
-      upsertRceCustomer({
+      await upsertRceCustomer({
         name: finalized.callerName ?? '알 수 없음',
         phone: active.callerPhone,
         lastVisit: endedAt.split('T')[0],
