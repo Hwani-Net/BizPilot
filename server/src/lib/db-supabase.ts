@@ -626,3 +626,231 @@ export async function checkAvailability(date: string, time: string): Promise<boo
   if (error) throw error;
   return false; // Has conflict
 }
+
+// ── Parts Seed ──────────────────────────────────────────────
+
+export async function seedPartsIfEmpty(): Promise<void> {
+  const { count } = await supabase
+    .from('parts')
+    .select('*', { count: 'exact', head: true });
+
+  if ((count ?? 0) > 0) return; // Already seeded
+
+  console.log('[seed] parts 테이블 시드 데이터 삽입 중...');
+
+  const parts = [
+    {
+      part_number: 'OIL-5W30-SYN-4L',
+      name_ko: '합성 엔진오일 5W-30 (4L)',
+      name_en: 'Synthetic Engine Oil 5W-30 4L',
+      description: '현대/기아 차량 권장 합성 엔진오일. API SP 등급.',
+      price_parts: 38000,
+      price_labor: 15000,
+      compatible_models: ['그랜저', '소나타', '아반떼', 'K5', 'K8', '스포티지'],
+      category: '엔진오일',
+    },
+    {
+      part_number: 'OIL-5W40-SYN-4L',
+      name_ko: '합성 엔진오일 5W-40 (4L)',
+      name_en: 'Synthetic Engine Oil 5W-40 4L',
+      description: '고성능/유럽형 엔진 전용 합성 엔진오일.',
+      price_parts: 45000,
+      price_labor: 15000,
+      compatible_models: ['BMW', '벤츠', '아우디', '폭스바겐', '제네시스'],
+      category: '엔진오일',
+    },
+    {
+      part_number: 'FILTER-AIR-AVANTE',
+      name_ko: '에어필터 (아반떼/i30 전용)',
+      name_en: 'Air Filter for Avante/i30',
+      description: '현대 아반떼 CN7, i30 전용 에어클리너 필터.',
+      price_parts: 18000,
+      price_labor: 10000,
+      compatible_models: ['아반떼', 'i30'],
+      category: '필터',
+    },
+    {
+      part_number: 'FILTER-AIR-SONATA',
+      name_ko: '에어필터 (소나타/K5 전용)',
+      name_en: 'Air Filter for Sonata/K5',
+      description: '현대 소나타 DN8, 기아 K5 DL3 전용 에어클리너 필터.',
+      price_parts: 20000,
+      price_labor: 10000,
+      compatible_models: ['소나타', 'K5'],
+      category: '필터',
+    },
+    {
+      part_number: 'FILTER-AC-UNI',
+      name_ko: '에어컨 필터 (활성탄 타입)',
+      name_en: 'Cabin Air Filter (Activated Carbon)',
+      description: '미세먼지 + 항균 기능 포함 고급형 에어컨 필터.',
+      price_parts: 15000,
+      price_labor: 8000,
+      compatible_models: ['그랜저', '소나타', '아반떼', '투싼', '싼타페', 'K5', 'K7'],
+      category: '필터',
+    },
+    {
+      part_number: 'BRAKE-PAD-FRONT-GRAN',
+      name_ko: '브레이크 패드 전륜 (그랜저)',
+      name_en: 'Front Brake Pad for Grandeur',
+      description: '현대 그랜저 IG/GN 전륜 브레이크 패드 (세라믹).',
+      price_parts: 85000,
+      price_labor: 40000,
+      compatible_models: ['그랜저'],
+      category: '브레이크',
+    },
+    {
+      part_number: 'BRAKE-PAD-FRONT-AVANTE',
+      name_ko: '브레이크 패드 전륜 (아반떼)',
+      name_en: 'Front Brake Pad for Avante',
+      description: '현대 아반떼 CN7 전륜 브레이크 패드.',
+      price_parts: 55000,
+      price_labor: 35000,
+      compatible_models: ['아반떼'],
+      category: '브레이크',
+    },
+    {
+      part_number: 'SPARK-PLUG-IRIDIUM',
+      name_ko: '이리듐 점화플러그 (4개 세트)',
+      name_en: 'Iridium Spark Plug Set (4pcs)',
+      description: '내구성과 점화 효율이 높은 이리듐 합금 점화플러그.',
+      price_parts: 68000,
+      price_labor: 30000,
+      compatible_models: ['소나타', '아반떼', 'K5', 'K3', '코나'],
+      category: '점화계통',
+    },
+    {
+      part_number: 'WIPER-BLADE-600-450',
+      name_ko: '와이퍼 블레이드 세트 (운전석 600mm + 조수석 450mm)',
+      name_en: 'Wiper Blade Set 600mm/450mm',
+      description: '무소음 그래파이트 코팅 프리미엄 와이퍼 블레이드.',
+      price_parts: 22000,
+      price_labor: 5000,
+      compatible_models: ['그랜저', '소나타', '아반떼', 'K5', '투싼'],
+      category: '외장',
+    },
+    {
+      part_number: 'COOLANT-BLUE-2L',
+      name_ko: '냉각수 (부동액) 2L 블루',
+      name_en: 'Engine Coolant Antifreeze 2L Blue',
+      description: '장기 내구성 실리케이트 타입 냉각수. 희석형(50:50).',
+      price_parts: 12000,
+      price_labor: 20000,
+      compatible_models: ['그랜저', '소나타', '아반떼', '투싼', '싼타페', 'K5', 'K8'],
+      category: '냉각계통',
+    },
+    {
+      part_number: 'TIRE-195-65-R15',
+      name_ko: '타이어 195/65R15 (1개)',
+      name_en: 'Tire 195/65R15',
+      description: '국산 사계절 타이어. 아반떼/K3 표준 규격.',
+      price_parts: 95000,
+      price_labor: 15000,
+      compatible_models: ['아반떼', 'K3'],
+      category: '타이어',
+    },
+    {
+      part_number: 'TIRE-225-60-R17',
+      name_ko: '타이어 225/60R17 (1개)',
+      name_en: 'Tire 225/60R17',
+      description: '중형 SUV용 사계절 타이어.',
+      price_parts: 135000,
+      price_labor: 15000,
+      compatible_models: ['투싼', '스포티지', '코나'],
+      category: '타이어',
+    },
+    {
+      part_number: 'BATTERY-60AH-DIN',
+      name_ko: '자동차 배터리 60Ah (DIN 규격)',
+      name_en: 'Car Battery 60Ah DIN',
+      description: 'AGM 타입 고출력 배터리. 아이들링 스톱 차량 호환.',
+      price_parts: 180000,
+      price_labor: 15000,
+      compatible_models: ['소나타', '그랜저', 'K5', 'K8', '스타렉스'],
+      category: '전기계통',
+    },
+    {
+      part_number: 'TRANS-OIL-ATF-4L',
+      name_ko: '자동변속기 오일 ATF (4L)',
+      name_en: 'Automatic Transmission Fluid ATF 4L',
+      description: '현대/기아 자동변속기 전용 유압유.',
+      price_parts: 55000,
+      price_labor: 35000,
+      compatible_models: ['그랜저', '소나타', 'K5', 'K8', '카니발'],
+      category: '미션',
+    },
+    {
+      part_number: 'POWER-STEERING-FLUID',
+      name_ko: '파워스티어링 오일 1L',
+      name_en: 'Power Steering Fluid 1L',
+      description: '유압식 파워스티어링 전용 오일.',
+      price_parts: 8000,
+      price_labor: 10000,
+      compatible_models: ['그랜저', '소나타', '스타렉스'],
+      category: '조향계통',
+    },
+    {
+      part_number: 'BRAKE-FLUID-DOT4',
+      name_ko: '브레이크 오일 DOT4 (500ml)',
+      name_en: 'Brake Fluid DOT4 500ml',
+      description: '고온 내성 DOT4 규격 브레이크 오일.',
+      price_parts: 9000,
+      price_labor: 15000,
+      compatible_models: ['그랜저', '소나타', '아반떼', '투싼', 'K5', 'K8'],
+      category: '브레이크',
+    },
+    {
+      part_number: 'FILTER-OIL-GRAN-IG',
+      name_ko: '오일필터 (그랜저 IG)',
+      name_en: 'Oil Filter for Grandeur IG',
+      description: '현대 그랜저 IG 2.4/3.3 엔진 전용 오일필터.',
+      price_parts: 8000,
+      price_labor: 0,
+      compatible_models: ['그랜저'],
+      category: '필터',
+    },
+    {
+      part_number: 'BELT-TIMING-SONATA',
+      name_ko: '타이밍 벨트 (소나타)',
+      name_en: 'Timing Belt for Sonata',
+      description: '현대 소나타 2.0 엔진 타이밍 벨트. 아이들러 풀리 포함.',
+      price_parts: 75000,
+      price_labor: 180000,
+      compatible_models: ['소나타'],
+      category: '엔진부품',
+    },
+    {
+      part_number: 'SHOCK-ABSORBER-FRONT',
+      name_ko: '쇼크업소버 전륜 (2개 세트)',
+      name_en: 'Front Shock Absorber Set (x2)',
+      description: '가스 봉입식 단통형 쇼크업소버. 주행 안정성 개선.',
+      price_parts: 220000,
+      price_labor: 80000,
+      compatible_models: ['소나타', 'K5', '아반떼'],
+      category: '현가장치',
+    },
+    {
+      part_number: 'BULB-LED-H7',
+      name_ko: 'LED 헤드램프 전구 H7 (2개)',
+      name_en: 'LED Headlamp H7 Bulb Set',
+      description: '6000K 화이트 LED 헤드램프 전구. 기존 할로겐 대체용.',
+      price_parts: 35000,
+      price_labor: 20000,
+      compatible_models: ['소나타', '아반떼', 'K5', 'K3', '투싼', '스포티지'],
+      category: '조명',
+    },
+  ];
+
+  const { error } = await supabase.from('parts').insert(
+    parts.map(p => ({
+      ...p,
+      compatible_models: p.compatible_models, // stored as jsonb array
+    }))
+  );
+
+  if (error) {
+    console.error('[seed] parts 시드 오류:', error.message);
+  } else {
+    console.log(`[seed] ✅ parts 시드 완료 (${parts.length}종)`);
+  }
+}

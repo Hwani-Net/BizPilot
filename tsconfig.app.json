@@ -21,5 +21,22 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/components/ui/carousel.tsx",
+    "src/components/ui/chart.tsx",
+    "src/components/ui/calendar.tsx",
+    "src/components/ui/sonner.tsx",
+    "src/components/ui/command.tsx",
+    "src/components/ui/drawer.tsx",
+    "src/components/ui/menubar.tsx",
+    "src/components/ui/navigation-menu.tsx",
+    "src/components/ui/resizable.tsx",
+    "src/components/ui/input-otp.tsx",
+    "src/components/ui/context-menu.tsx",
+    "src/components/ui/hover-card.tsx",
+    "src/components/ui/breadcrumb.tsx",
+    "src/components/ui/form.tsx",
+    "src/components/ui/sidebar.tsx"
+  ]
 }

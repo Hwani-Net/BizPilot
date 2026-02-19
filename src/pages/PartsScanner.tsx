@@ -21,8 +21,10 @@ export default function PartsScanner() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [mode, setMode] = useState<'camera' | 'search' | 'vin'>('camera');
   const [query, setQuery] = useState('');
+  const [vinInput, setVinInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ parts: Part[], analysis?: any } | null>(null);
+  const [vinResult, setVinResult] = useState<{ car_info: { make: string; model: string; year: string; full_name: string }; compatible_parts: Part[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Camera Setup
@@ -112,6 +114,32 @@ export default function PartsScanner() {
       setResult({ parts: data.results || [], analysis: data.analysis });
     } catch (err) {
       setError('검색 중 오류가 발생했습니다.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // VIN Search
+  const handleVinSearch = async () => {
+    const vin = vinInput.trim().toUpperCase();
+    if (vin.length !== 17) {
+      setError('VIN은 반드시 17자리여야 합니다.');
+      return;
+    }
+    setIsAnalyzing(true);
+    setVinResult(null);
+    setError(null);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/parts/vin?vin=${encodeURIComponent(vin)}`);
+      if (!res.ok) throw new Error('VIN decode failed');
+      const data = await res.json();
+      if (data.error) {
+        setError('차량 정보를 찾을 수 없습니다. VIN을 다시 확인해주세요.');
+      } else {
+        setVinResult(data);
+      }
+    } catch {
+      setError('VIN 조회 중 오류가 발생했습니다.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -278,11 +306,116 @@ export default function PartsScanner() {
         )}
         
         {mode === 'vin' && (
-           <div className="p-4 flex flex-col items-center justify-center h-full text-center">
-             <ScanLine className="w-16 h-16 text-gray-600 mb-4" />
-             <p className="text-gray-400 mb-4">차대번호(VIN) 스캔 기능 준비 중...</p>
-             <Button variant="outline" onClick={() => setMode('search')}>검색으로 이동</Button>
-           </div>
+          <div className="p-4 h-full overflow-y-auto">
+            {/* VIN Input */}
+            <div className="mb-6">
+              <p className="text-gray-400 text-sm mb-3">차대번호(VIN) 17자리를 입력하면 차량 정보와 호환 부품을 조회합니다.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={vinInput}
+                  maxLength={17}
+                  onChange={(e) => setVinInput(e.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleVinSearch()}
+                  placeholder="예: 1HGBH41JXMN109186"
+                  className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 text-sm font-mono tracking-widest focus:outline-none focus:border-blue-500"
+                />
+                <Button
+                  onClick={handleVinSearch}
+                  disabled={isAnalyzing || vinInput.length !== 17}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40"
+                >
+                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
+              </div>
+              {/* Character count */}
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-gray-600">O, I, Q 제외 영문/숫자만 입력</span>
+                <span className={`text-xs font-mono ${vinInput.length === 17 ? 'text-green-400' : 'text-gray-500'}`}>
+                  {vinInput.length}/17
+                </span>
+              </div>
+            </div>
+
+            {/* Loading */}
+            {isAnalyzing && (
+              <div className="text-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-2" />
+                <p className="text-gray-400 text-sm">NHTSA 데이터베이스 조회 중...</p>
+              </div>
+            )}
+
+            {/* VIN Result */}
+            {vinResult && (
+              <div className="space-y-4">
+                {/* Car Info Card */}
+                <div className="bg-blue-900/30 border border-blue-700 p-4 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-600/30 flex items-center justify-center">
+                      <ScanLine className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-lg">{vinResult.car_info.full_name}</h3>
+                      <p className="text-xs text-gray-400">VIN: {vinInput}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-gray-800/50 rounded p-2">
+                      <p className="text-xs text-gray-500">제조사</p>
+                      <p className="text-sm font-semibold text-white">{vinResult.car_info.make}</p>
+                    </div>
+                    <div className="bg-gray-800/50 rounded p-2">
+                      <p className="text-xs text-gray-500">모델</p>
+                      <p className="text-sm font-semibold text-white">{vinResult.car_info.model}</p>
+                    </div>
+                    <div className="bg-gray-800/50 rounded p-2">
+                      <p className="text-xs text-gray-500">연식</p>
+                      <p className="text-sm font-semibold text-white">{vinResult.car_info.year}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compatible Parts */}
+                <h3 className="text-base font-semibold text-gray-300">
+                  호환 부품 ({vinResult.compatible_parts.length}종)
+                </h3>
+                {vinResult.compatible_parts.length === 0 ? (
+                  <p className="text-center text-gray-500 py-6 text-sm">DB에 등록된 호환 부품이 없습니다.</p>
+                ) : (
+                  vinResult.compatible_parts.map(part => (
+                    <div key={part.id} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold text-white">{part.name_ko}</h4>
+                          <p className="text-xs text-gray-500 font-mono">{part.part_number}</p>
+                        </div>
+                        <span className="text-xs bg-green-900/50 text-green-400 px-2 py-0.5 rounded">재고 있음</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                        <div>
+                          <span className="text-gray-500 block text-xs">부품가</span>
+                          <span className="text-white font-medium">{part.price_parts.toLocaleString()}원</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block text-xs">예상 공임</span>
+                          <span className="text-white font-medium">{part.price_labor ? `${part.price_labor.toLocaleString()}원` : '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!isAnalyzing && !vinResult && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <ScanLine className="w-16 h-16 text-gray-700 mb-4" />
+                <p className="text-gray-500 text-sm">VIN을 입력하고 조회 버튼을 누르세요.</p>
+                <p className="text-gray-600 text-xs mt-2">VIN은 차량 등록증 또는 앞유리(운전석 하단)에서 확인할 수 있습니다.</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

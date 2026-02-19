@@ -9,6 +9,7 @@
     "bookings": "Bookings",
     "accounting": "Ledger",
     "rce": "RCE Engine",
+    "scanner": "AR Parts Scan",
     "settings": "Settings"
   },
   "dashboard": {

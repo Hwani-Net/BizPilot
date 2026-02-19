@@ -1,11 +1,10 @@
-// BizPilot Server — Twilio Voice + OpenAI Realtime API Bridge
-// Architecture: Twilio (call) → Twilio Media Streams (WebSocket) → This server → OpenAI Realtime API
 import Fastify from 'fastify';
 import FastifyWebSocket from '@fastify/websocket';
 import FastifyCors from '@fastify/cors';
 import { config } from 'dotenv';
 import { initRoutes } from './routes/index.js';
 import { startScheduler } from './lib/scheduler.js';
+import { seedPartsIfEmpty } from './lib/db-supabase.js';
 
 config(); // load server/.env
 
@@ -53,6 +52,9 @@ async function bootstrap() {
 
     // Start RCE cron scheduler
     startScheduler();
+
+    // Seed demo parts data on first boot (non-blocking)
+    seedPartsIfEmpty().catch(e => console.error('[seed] parts 시드 실패:', e));
   } catch (err) {
     app.log.error(err);
     process.exit(1);

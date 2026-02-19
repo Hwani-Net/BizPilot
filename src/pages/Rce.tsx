@@ -1,4 +1,5 @@
 
+import { useNavigate } from 'react-router-dom';
 import {
   Car,
   Search,
@@ -9,9 +10,8 @@ import {
   AlertTriangle,
   Send,
   Bell,
-  Calendar,
-  RefreshCw,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -101,6 +101,7 @@ const smsHistory = [
 // ─── Content Components ──────────────────────────────────────────────────────
 
 function VehicleList() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center gap-3">
@@ -178,6 +179,12 @@ function VehicleList() {
               {car.rceStatus === "active" ? "RCE 활성" :
                car.rceStatus === "warning" ? "점검 필요" : "미가입"}
             </Badge>
+            <button
+              onClick={() => navigate(`/vehicles/${encodeURIComponent(car.phone)}`)}
+              className="mt-1 text-xs text-[hsl(var(--primary))] hover:underline self-end"
+            >
+              이력 보기 →
+            </button>
           </div>
         ))}
       </div>
