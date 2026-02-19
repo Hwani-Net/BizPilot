@@ -11,6 +11,7 @@ import {
   Languages,
   Zap,
   Wrench,
+  ScanLine,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useI18n } from '@/hooks/useI18n';
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
   { path: '/calls', icon: Phone, labelKey: 'nav.calls' },
   { path: '/bookings', icon: CalendarDays, labelKey: 'nav.bookings' },
+  { path: '/scanner', icon: ScanLine, labelKey: 'nav.scanner' },
   { path: '/accounting', icon: Receipt, labelKey: 'nav.accounting' },
   { path: '/rce', icon: Wrench, labelKey: 'nav.rce' },
   { path: '/settings', icon: Settings, labelKey: 'nav.settings' },

@@ -6,6 +6,7 @@ import { smsRoutes } from './sms.js';
 import { rceRoutes } from './rce.js';
 import { accountingRoutes } from './accounting.js';
 import { dashboardRoutes } from './dashboard.js';
+import { partsRoutes } from './parts.js';
 
 export async function initRoutes(app: FastifyInstance) {
   // Health check/root already handled in index.ts
@@ -28,4 +29,6 @@ export async function initRoutes(app: FastifyInstance) {
 
   // Dashboard Summary
   await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+  // Parts Scanner (AR/Vision)
+  await app.register(partsRoutes, { prefix: '/api/parts' });
 }

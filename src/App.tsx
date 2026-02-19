@@ -7,6 +7,7 @@ import Accounting from '@/pages/Accounting';
 import Settings from '@/pages/Settings';
 import Rce from '@/pages/Rce';
 import NotFound from '@/pages/NotFound';
+import PartsScanner from '@/pages/PartsScanner';
 import './App.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/accounting" element={<Accounting />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/rce" element={<Rce />} />
+          <Route path="/scanner" element={<PartsScanner />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>

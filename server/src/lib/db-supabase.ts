@@ -192,7 +192,22 @@ function rowToBooking(row: Record<string, unknown>): Booking {
 
 // ── Call Records ────────────────────────────────────────────
 
+export interface Part {
+  id: number;
+  part_number: string;
+  name_ko: string;
+  name_en?: string;
+  description?: string;
+  price_parts: number;
+  price_labor?: number;
+  compatible_models?: string[];
+  category?: string;
+  image_url?: string;
+  created_at: string;
+}
+
 export async function insertCallRecord(record: CallRecord & { transcript?: TranscriptEntry[] }): Promise<void> {
+  // ... existing implementation ...
   const { error } = await supabase.from('call_records').upsert({
     id: record.id,
     caller_name: record.callerName ?? '알 수 없음',
@@ -207,6 +222,31 @@ export async function insertCallRecord(record: CallRecord & { transcript?: Trans
   });
   if (error) throw error;
 }
+
+// ── Parts (AR Scanner) ──────────────────────────────────────
+export async function listParts(query?: string): Promise<Part[]> {
+  let builder = supabase.from('parts').select('*');
+  if (query) {
+    // Simple search on number or name
+    builder = builder.or(`part_number.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%`);
+  }
+  const { data, error } = await builder.order('created_at', { ascending: false }).limit(50);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getPartByNumber(partNo: string): Promise<Part | null> {
+  const { data, error } = await supabase.from('parts').select('*').eq('part_number', partNo).single();
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 is 'not found'
+  return data;
+}
+
+export async function searchPartsByVector(embedding: number[]): Promise<Part[]> {
+  // Vector search requires 'match_parts' RPC function which we haven't created yet.
+  // Fallback to text search or return empty for now.
+  return [];
+}
+
 
 export async function listCallRecords(limit = 50): Promise<CallRecord[]> {
   const { data, error } = await supabase
