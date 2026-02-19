@@ -2,3 +2,19 @@
 .env*.local
 dist/
 node_modules/
+
+# SQLite DB files (runtime data)
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Screenshot artifacts (generated during dev/testing)
+*.png
+*.webp
+
+# TypeScript build cache
+tsconfig.app.tsbuildinfo
+server/tsconfig.tsbuildinfo

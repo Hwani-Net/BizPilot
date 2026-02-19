@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "BizPilot",
+    "tagline": "소상공인 AI 경리 · 전화 비서"
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "calls": "AI 전화",
+    "bookings": "예약 관리",
+    "accounting": "회계",
+    "rce": "재방문 유도",
+    "settings": "설정"
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "todayRevenue": "오늘 매출",
+    "weekRevenue": "이번 주 매출",
+    "monthRevenue": "이번 달 매출",
+    "todayCalls": "오늘 통화",
+    "todayBookings": "오늘 예약",
+    "pendingReceipts": "미처리 영수증",
+    "recentCalls": "최근 통화",
+    "upcomingBookings": "다가오는 예약",
+    "quickActions": "빠른 작업",
+    "viewAll": "전체 보기",
+    "noData": "데이터가 없습니다"
+  },
+  "calls": {
+    "title": "AI 전화 에이전트",
+    "startAgent": "에이전트 시작",
+    "stopAgent": "에이전트 중지",
+    "status": {
+      "idle": "대기 중",
+      "listening": "듣는 중...",
+      "speaking": "응답 중...",
+      "processing": "처리 중..."
+    },
+    "copilot": {
+      "title": "AI 코파일럿",
+      "suggestions": "추천 응대",
+      "customerInfo": "고객 정보",
+      "bookingSlots": "예약 가능 시간"
+    },
+    "transcript": "통화 기록",
+    "summary": "통화 요약",
+    "callEnded": "통화 종료",
+    "missedCall": "부재중 전화"
+  },
+  "bookings": {
+    "title": "예약 관리",
+    "newBooking": "새 예약",
+    "editBooking": "예약 수정",
+    "cancel": "예약 취소",
+    "confirm": "예약 확정",
+    "customer": "고객",
+    "date": "날짜",
+    "time": "시간",
+    "service": "서비스",
+    "status": {
+      "confirmed": "확정",
+      "pending": "대기",
+      "cancelled": "취소",
+      "completed": "완료"
+    }
+  },
+  "accounting": {
+    "title": "회계 관리",
+    "uploadReceipt": "영수증 업로드",
+    "scanReceipt": "영수증 스캔",
+    "ledger": "장부",
+    "income": "수입",
+    "expense": "지출",
+    "total": "합계",
+    "category": "카테고리",
+    "amount": "금액",
+    "date": "날짜",
+    "vendor": "거래처",
+    "ocrProcessing": "OCR 처리 중...",
+    "verified": "검증됨",
+    "pending": "대기"
+  },
+  "settings": {
+    "title": "설정",
+    "businessProfile": "사업장 정보",
+    "aiSettings": "AI 설정",
+    "theme": "테마",
+    "language": "언어",
+    "notifications": "알림",
+    "rceSettings": "재방문 유도 설정",
+    "save": "저장",
+    "saved": "저장되었습니다"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "retry": "재시도",
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "수정",
+    "confirm": "확인",
+    "search": "검색",
+    "filter": "필터",
+    "noResults": "결과가 없습니다",
+    "currency": "원"
+  },
+  "theme": {
+    "light": "라이트",
+    "dark": "다크",
+    "system": "시스템"
+  }
+}

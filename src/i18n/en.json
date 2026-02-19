@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "BizPilot",
+    "tagline": "AI Back-Office & Phone Agent for SMBs"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "calls": "AI Calls",
+    "bookings": "Bookings",
+    "accounting": "Accounting",
+    "rce": "RCE Alerts",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "todayRevenue": "Today's Revenue",
+    "weekRevenue": "This Week",
+    "monthRevenue": "This Month",
+    "todayCalls": "Today's Calls",
+    "todayBookings": "Today's Bookings",
+    "pendingReceipts": "Pending Receipts",
+    "recentCalls": "Recent Calls",
+    "upcomingBookings": "Upcoming Bookings",
+    "quickActions": "Quick Actions",
+    "viewAll": "View All",
+    "noData": "No data available"
+  },
+  "calls": {
+    "title": "AI Phone Agent",
+    "startAgent": "Start Agent",
+    "stopAgent": "Stop Agent",
+    "status": {
+      "idle": "Idle",
+      "listening": "Listening...",
+      "speaking": "Speaking...",
+      "processing": "Processing..."
+    },
+    "copilot": {
+      "title": "AI Copilot",
+      "suggestions": "Suggested Responses",
+      "customerInfo": "Customer Info",
+      "bookingSlots": "Available Slots"
+    },
+    "transcript": "Transcript",
+    "summary": "Call Summary",
+    "callEnded": "Call Ended",
+    "missedCall": "Missed Call"
+  },
+  "bookings": {
+    "title": "Booking Management",
+    "newBooking": "New Booking",
+    "editBooking": "Edit Booking",
+    "cancel": "Cancel Booking",
+    "confirm": "Confirm Booking",
+    "customer": "Customer",
+    "date": "Date",
+    "time": "Time",
+    "service": "Service",
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    }
+  },
+  "accounting": {
+    "title": "Accounting",
+    "uploadReceipt": "Upload Receipt",
+    "scanReceipt": "Scan Receipt",
+    "ledger": "Ledger",
+    "income": "Income",
+    "expense": "Expense",
+    "total": "Total",
+    "category": "Category",
+    "amount": "Amount",
+    "date": "Date",
+    "vendor": "Vendor",
+    "ocrProcessing": "Processing OCR...",
+    "verified": "Verified",
+    "pending": "Pending"
+  },
+  "settings": {
+    "title": "Settings",
+    "businessProfile": "Business Profile",
+    "aiSettings": "AI Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "notifications": "Notifications",
+    "rceSettings": "Re-engagement Settings",
+    "save": "Save",
+    "saved": "Settings saved"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "noResults": "No results found",
+    "currency": "₩"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}

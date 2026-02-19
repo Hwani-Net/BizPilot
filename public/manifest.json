@@ -1,0 +1,17 @@
+{
+  "name": "BizPilot",
+  "short_name": "BizPilot",
+  "description": "소상공인 AI 경리 · 전화 비서",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
