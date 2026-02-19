@@ -200,8 +200,53 @@ async function connectToOpenAI(
           silence_duration_ms: 500,
           create_response: true,
         },
-        input_audio_format: 'g711_ulaw',   // Twilio's native format
-        output_audio_format: 'g711_ulaw',  // Send back in same format
+        tools: [
+          {
+            type: 'function',
+            name: 'check_availability',
+            description: 'Check if a specific date and time is available for service.',
+            parameters: {
+              type: 'object',
+              properties: {
+                date: { type: 'string', description: 'YYYY-MM-DD format' },
+                time: { type: 'string', description: 'HH:mm format' }
+              },
+              required: ['date', 'time']
+            }
+          },
+          {
+            type: 'function',
+            name: 'create_booking',
+            description: 'Create a new service booking in the database.',
+            parameters: {
+              type: 'object',
+              properties: {
+                ownerName: { type: 'string' },
+                ownerPhone: { type: 'string' },
+                vehicleModel: { type: 'string' },
+                serviceType: { type: 'string', description: 'e.g., 엔진오일, 타이어' },
+                startTime: { type: 'string', description: 'YYYY-MM-DD HH:mm format' },
+                notes: { type: 'string' }
+              },
+              required: ['ownerName', 'ownerPhone', 'serviceType', 'startTime']
+            }
+          },
+          {
+            type: 'function',
+            name: 'get_customer_history',
+            description: 'Retrieve maintenance history and RCE recommendations for a customer.',
+            parameters: {
+              type: 'object',
+              properties: {
+                phone: { type: 'string' }
+              },
+              required: ['phone']
+            }
+          }
+        ],
+        tool_choice: 'auto',
+        input_audio_format: 'g711_ulaw',
+        output_audio_format: 'g711_ulaw',
         voice: env.AI_VOICE,
         instructions: buildSystemPrompt(session.callerPhone),
         modalities: ['text', 'audio'],
@@ -210,10 +255,61 @@ async function connectToOpenAI(
     }));
   });
 
-  ws.on('message', (raw: Buffer) => {
+  ws.on('message', async (raw: Buffer) => {
     const event = JSON.parse(raw.toString()) as OpenAIRealtimeEvent;
 
     switch (event.type) {
+      case 'response.function_call_arguments.done': {
+        const { name, call_id, arguments: argsJson } = event;
+        const args = JSON.parse(argsJson || '{}');
+        let output: any = { error: 'Unknown function' };
+
+        console.log(`[AI Tool Call] ${name}`, args);
+
+        try {
+          const { checkAvailability, createBooking, getVehicleByPhone, getMaintenanceStatus } = await import('../lib/db.js');
+
+          if (name === 'check_availability') {
+            const available = checkAvailability(args.date, args.time);
+            output = { date: args.date, time: args.time, available };
+          } else if (name === 'create_booking') {
+            const booking = createBooking({
+              ownerName: args.ownerName,
+              ownerPhone: args.ownerPhone,
+              vehicleModel: args.vehicleModel,
+              serviceType: args.serviceType,
+              startTime: args.startTime,
+              status: 'confirmed',
+              notes: args.notes
+            });
+            output = { success: true, bookingId: booking.id };
+          } else if (name === 'get_customer_history') {
+            const vehicle = getVehicleByPhone(args.phone);
+            if (vehicle) {
+              const status = getMaintenanceStatus(vehicle);
+              output = { found: true, vehicleModel: vehicle.vehicleModel, status };
+            } else {
+              output = { found: false, message: '신규 고객입니다.' };
+            }
+          }
+        } catch (err) {
+          output = { error: (err as Error).message };
+        }
+
+        // Send tool output back to OpenAI
+        ws.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'function_call_output',
+            call_id,
+            output: JSON.stringify(output)
+          }
+        }));
+
+        // Trigger a new response from the model
+        ws.send(JSON.stringify({ type: 'response.create' }));
+        break;
+      }
       case 'response.audio.delta':
         // Forward AI audio → Twilio
         if (event.delta && twilioSocket.readyState === WebSocket.OPEN) {
@@ -260,22 +356,24 @@ async function connectToOpenAI(
 
 // ===== Helpers =====
 function buildSystemPrompt(callerPhone: string): string {
-  return `당신은 소상공인 매장의 AI 전화 비서 'BizPilot'입니다.
+  return `당신은 자동차 정비소 '오토메이트(AutoMate)'의 AI 전화 비서 'BizPilot'입니다.
 역할:
-- 고객의 전화를 받아 친절하게 응대합니다
-- 예약 요청을 받아 날짜/시간/서비스를 확인합니다
-- 영업시간 문의에 답변합니다
-- 모든 대화를 한국어로 진행합니다
+- 고객의 전화를 받아 친절하게 응대합니다.
+- 엔진오일 교환, 타이어 교체, 일반 점검 등 정비 예약 요청을 받아 날짜/시간을 확인합니다.
+- 차종과 차량 번호를 확인하여 정확한 부품 준비를 돕습니다.
+- 영업시간(평일 09:00~19:00, 토요일 09:00~15:00) 문의에 답변합니다.
+- 모든 대화를 한국어로 진행합니다.
 
 현재 전화 고객 번호: ${callerPhone}
 오늘 날짜: ${new Date().toLocaleDateString('ko-KR')}
-영업시간: 09:00 ~ 21:00
 
 응대 규칙:
-- 항상 공손하고 친절하게 말하세요
-- 예약 시 이름, 날짜, 시간, 서비스를 확인하세요
-- 모호한 요청은 명확히 질문하세요
-- 통화는 간결하게 진행하세요`;
+- 항상 공손하고 전문가다운 태도로 말하세요.
+- 예약 가능 여부를 물어보면 반드시 'check_availability' 도구를 사용하여 확인 후 답변하세요.
+- 예약이 확정되면 'create_booking' 도구를 사용하여 DB에 저장하세요.
+- 단골 고객인지 확인하려면 'get_customer_history' 도구를 사용하세요. 이를 통해 소모품 교체 주기가 임박한 항목(urgent=true)이 있다면 정비 예약 시 함께 추천하세요 (RCE 전략).
+- 견적 문의 시 "현장 점검 후 정확한 금액 안내가 가능함"을 고지하되, 대략적인 공임비를 안내할 수 있습니다.
+- 통화는 핵심 위주로 간결하게 진행하세요.`;
 }
 
 function enkode(text: string): string {
@@ -311,5 +409,8 @@ interface OpenAIRealtimeEvent {
   type: string;
   delta?: string;
   transcript?: string;
+  name?: string;
+  call_id?: string;
+  arguments?: string;
   error?: { message: string };
 }

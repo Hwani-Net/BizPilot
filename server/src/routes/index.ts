@@ -5,19 +5,27 @@ import { ocrRoutes } from './ocr.js';
 import { smsRoutes } from './sms.js';
 import { rceRoutes } from './rce.js';
 import { accountingRoutes } from './accounting.js';
+import { dashboardRoutes } from './dashboard.js';
 
 export async function initRoutes(app: FastifyInstance) {
-  // Twilio voice webhook + media stream
-  await app.register(twilioRoutes, { prefix: '/twilio' });
+  // Health check/root already handled in index.ts
 
-  // REST API for frontend
+  // OCR (Receipts)
+  await app.register(ocrRoutes, { prefix: '/api/ocr' });
+
+  // Calls (Twilio inbound + history)
+  await app.register(twilioRoutes, { prefix: '/twilio' });
   await app.register(callsApiRoutes, { prefix: '/api/calls' });
-  await app.register(ocrRoutes,      { prefix: '/api/ocr' });
-  await app.register(smsRoutes,      { prefix: '/api/sms' });
+
+  // SMS
+  await app.register(smsRoutes, { prefix: '/api/sms' });
+
+  // RCE (Campaigns)
+  await app.register(rceRoutes, { prefix: '/api/rce' });
 
   // Accounting (ledger + receipts)
-  await app.register(accountingRoutes);
+  await app.register(accountingRoutes, { prefix: '/api/accounting' });
 
-  // RCE (Re-engagement Campaign) API
-  await app.register(rceRoutes);
+  // Dashboard Summary
+  await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
 }

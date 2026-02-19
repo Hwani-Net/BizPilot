@@ -7,6 +7,7 @@ import { config } from 'dotenv';
 import { initRoutes } from './routes/index.js';
 import { startScheduler } from './lib/scheduler.js';
 import { getDb } from './lib/db.js';
+import { seedDemoData } from './lib/seed.js';
 
 config({ path: '../.env' });   // load root .env
 
@@ -35,9 +36,10 @@ async function bootstrap() {
     db: 'connected',
   }));
 
-  // Initialize SQLite (warm up connection)
+  // Initialize SQLite (warm up connection) + seed demo data
   try {
-    getDb();
+    const database = getDb();
+    seedDemoData(database);
     app.log.info('SQLite database initialized');
   } catch (err) {
     app.log.error(err, 'Failed to initialize SQLite');

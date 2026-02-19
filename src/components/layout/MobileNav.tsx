@@ -4,6 +4,7 @@ import {
   Phone,
   CalendarDays,
   Receipt,
+  Wrench,
   Settings,
 } from 'lucide-react';
 import { useI18n } from '@/hooks/useI18n';
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { path: '/calls', icon: Phone, labelKey: 'nav.calls' },
   { path: '/bookings', icon: CalendarDays, labelKey: 'nav.bookings' },
   { path: '/accounting', icon: Receipt, labelKey: 'nav.accounting' },
+  { path: '/rce', icon: Wrench, labelKey: 'nav.rce' },
   { path: '/settings', icon: Settings, labelKey: 'nav.settings' },
 ] as const;
 
@@ -28,7 +30,7 @@ export default function MobileNav() {
             to={path}
             end={path === '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
+              `flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
                 isActive
                   ? 'text-[hsl(var(--primary))]'
                   : 'text-[hsl(var(--text-muted))]'

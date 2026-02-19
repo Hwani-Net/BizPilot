@@ -142,6 +142,20 @@ function initSchema(db: Database.Database) {
       receipt_id  INTEGER REFERENCES receipts(id),
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Bookings (Realtime management)
+    CREATE TABLE IF NOT EXISTS bookings (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      vehicle_id   INTEGER REFERENCES vehicles(id),
+      owner_name   TEXT NOT NULL,
+      owner_phone  TEXT NOT NULL,
+      vehicle_model TEXT,
+      service_type TEXT NOT NULL,
+      start_time   TEXT NOT NULL, -- ISO 8601 (YYYY-MM-DD HH:mm)
+      status       TEXT NOT NULL DEFAULT 'confirmed', -- confirmed, pending, cancelled
+      notes        TEXT,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 
@@ -623,5 +637,80 @@ function rowToLedger(row: Record<string, unknown>): LedgerEntry {
     type: row.type as LedgerEntry['type'],
     receiptId: row.receipt_id as number | undefined,
     createdAt: row.created_at as string,
+  };
+}
+// ── Bookings ──────────────────────────────────────────────
+
+export interface Booking {
+  id: number;
+  vehicleId?: number;
+  ownerName: string;
+  ownerPhone: string;
+  vehicleModel?: string;
+  serviceType: string;
+  startTime: string;
+  status: 'confirmed' | 'pending' | 'cancelled';
+  notes?: string;
+}
+
+export function createBooking(data: Omit<Booking, 'id'>): Booking {
+  const db = getDb();
+  const vehicle = getVehicleByPhone(data.ownerPhone);
+  
+  const result = db.prepare(`
+    INSERT INTO bookings (vehicle_id, owner_name, owner_phone, vehicle_model, service_type, start_time, status, notes)
+    VALUES (@vehicleId, @ownerName, @ownerPhone, @vehicleModel, @serviceType, @startTime, @status, @notes)
+  `).run({
+    ...data,
+    vehicleId: vehicle?.id ?? null,
+    vehicleModel: data.vehicleModel ?? vehicle?.vehicleModel ?? '알 수 없음',
+  });
+
+  return getBookingById(result.lastInsertRowid as number)!;
+}
+
+export function getBookingById(id: number): Booking | null {
+  const db = getDb();
+  const row = db.prepare(`SELECT * FROM bookings WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return rowToBooking(row);
+}
+
+export function listBookings(date?: string): Booking[] {
+  const db = getDb();
+  let query = `SELECT * FROM bookings`;
+  const params: any[] = [];
+  
+  if (date) {
+    query += ` WHERE start_time LIKE ?`;
+    params.push(`${date}%`);
+  }
+  
+  query += ` ORDER BY start_time ASC`;
+  const rows = db.prepare(query).all(...params) as Record<string, unknown>[];
+  return rows.map(rowToBooking);
+}
+
+export function checkAvailability(date: string, time: string): boolean {
+  const db = getDb();
+  const target = `${date} ${time}`;
+  const conflict = db.prepare(`
+    SELECT id FROM bookings 
+    WHERE start_time = ? AND status != 'cancelled'
+  `).get(target);
+  return !conflict;
+}
+
+function rowToBooking(row: Record<string, unknown>): Booking {
+  return {
+    id: row.id as number,
+    vehicleId: row.vehicle_id as number | undefined,
+    ownerName: row.owner_name as string,
+    ownerPhone: row.owner_phone as string,
+    vehicleModel: row.vehicle_model as string | undefined,
+    serviceType: row.service_type as string,
+    startTime: row.start_time as string,
+    status: row.status as Booking['status'],
+    notes: row.notes as string | undefined,
   };
 }

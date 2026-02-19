@@ -91,14 +91,14 @@ export function useCallAgent(): UseCallAgentReturn {
           setStatus('processing');
           setTimeout(() => {
             setTranscript((prev) => [
-              ...prev,
-              { role: 'agent', text: '안녕하세요! 내일 오후 2시 확인해드리겠습니다. 성함이 어떻게 되세요?', timestamp: Date.now() },
-            ]);
-            setSuggestions([
-              { id: 's1', type: 'booking', title: '예약 가능 안내', content: '📅 내일 오후 2시, 4시 자리가 있습니다.', confidence: 0.95 },
-              { id: 's2', type: 'upsell', title: '프리미엄 업셀', content: '✨ 헤어 트리트먼트 추가 추천 (+30분)', confidence: 0.78 },
-              { id: 's3', type: 'action', title: '이름 확인 필요', content: '👤 고객 이름을 먼저 확인하세요.', confidence: 0.91 },
-            ]);
+            ...prev,
+            { role: 'agent', text: '안녕하세요! 내일 오후 2시 예약 가능합니다. 고객님 성함과 차량 모델을 알려주시겠어요?', timestamp: Date.now() },
+          ]);
+          setSuggestions([
+            { id: 's1', type: 'booking', title: '엔진오일 예약 안내', content: '📅 내일 오후 2시, 4시 리프트 여유 있습니다.', confidence: 0.95 },
+            { id: 's2', type: 'upsell', title: '브레이크액 업셀', content: '✨ 엔진오일 교체 시 브레이크액 무료 점검 제안', confidence: 0.78 },
+            { id: 's3', type: 'action', title: '차량 번호 확인', content: '🚗 차량 번호를 확인하여 정비 이력을 조회하세요.', confidence: 0.91 },
+          ]);
             setStatus('listening');
           }, 1500);
         }, 2000);
@@ -164,17 +164,17 @@ function runDemoMode(
   setTimeout(() => {
     setTranscript((prev) => [
       ...prev,
-      { role: 'caller', text: '안녕하세요, 예약하고 싶은데요.', timestamp: Date.now() },
+      { role: 'caller', text: '안녕하세요, 엔진오일 교체 비용이 얼마인가요?', timestamp: Date.now() },
     ]);
     setStatus('processing');
     setTimeout(() => {
       setTranscript((prev) => [
         ...prev,
-        { role: 'agent', text: '네, 안녕하세요! 어떤 날짜를 원하시나요?', timestamp: Date.now() },
+        { role: 'agent', text: '네, 안녕하세요! 차종에 따라 조금씩 다른데요, 모델명을 알 수 있을까요?', timestamp: Date.now() },
       ]);
       setSuggestions([
-        { id: 's1', type: 'booking', title: '예약 안내', content: '📅 오늘 오후 3시, 5시 자리가 있습니다.', confidence: 0.92 },
-        { id: 's2', type: 'upsell', title: '업셀 기회', content: '✨ 프리미엄 서비스 추천 가능', confidence: 0.78 },
+        { id: 's1', type: 'info', title: '차종별 단가표', content: '💰 국산 준중형 기점 8.5~11만원 선입니다.', confidence: 0.92 },
+        { id: 's2', type: 'action', title: '정비 이력 조회', content: '🔍 이전에 방문하신 적이 있는지 확인하세요.', confidence: 0.85 },
       ]);
       setStatus('listening');
     }, 1500);

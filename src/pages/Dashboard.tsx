@@ -15,71 +15,15 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/hooks/useI18n';
-
-// Mock data
-const STATS = [
-  {
-    key: 'todayRevenue',
-    label: '오늘 매출',
-    value: '₩1,250,000',
-    change: '+12%',
-    up: true,
-    icon: DollarSign,
-    gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-    glow: 'rgba(59,130,246,0.3)',
-  },
-  {
-    key: 'weekRevenue',
-    label: '이번 주 매출',
-    value: '₩8,750,000',
-    change: '+8%',
-    up: true,
-    icon: TrendingUp,
-    gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-    glow: 'rgba(139,92,246,0.3)',
-  },
-  {
-    key: 'todayCalls',
-    label: '오늘 통화',
-    value: '12',
-    change: '+3',
-    up: true,
-    icon: Phone,
-    gradient: 'linear-gradient(135deg, #10b981, #059669)',
-    glow: 'rgba(16,185,129,0.3)',
-  },
-  {
-    key: 'todayBookings',
-    label: '오늘 예약',
-    value: '5',
-    change: '-1',
-    up: false,
-    icon: CalendarDays,
-    gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    glow: 'rgba(245,158,11,0.3)',
-  },
-];
-
-const RECENT_CALLS = [
-  { name: '김민수', phone: '010-1234-5678', time: '14:32', duration: '2:15', status: 'completed' as const },
-  { name: '이지은', phone: '010-9876-5432', time: '13:45', duration: '5:02', status: 'completed' as const },
-  { name: 'Unknown', phone: '02-555-1234', time: '12:20', duration: '0:00', status: 'missed' as const },
-  { name: '박서준', phone: '010-5555-9999', time: '11:05', duration: '1:30', status: 'completed' as const },
-  { name: '최유나', phone: '010-7777-3333', time: '10:15', duration: '3:45', status: 'completed' as const },
-];
-
-const UPCOMING_BOOKINGS = [
-  { name: '김민수', vehicle: '그랜저 IG', time: '09:00', service: '엔진오일 교환', status: 'confirmed' as const },
-  { name: '박서준', vehicle: '소나타 DN8', time: '11:00', service: '타이어 위치교환', status: 'pending' as const },
-  { name: '이있었', vehicle: 'BMW 320i', time: '내일 10:00', service: '정기점검', status: 'confirmed' as const },
-];
-
+import { useDashboard } from '@/hooks/useDashboard';
+import { useBookings } from '@/hooks/useBookings';
+import { useAccounting } from '@/hooks/useAccounting';
 
 const QUICK_ACTIONS = [
   { label: 'AI 에이전트', icon: Sparkles, to: '/calls', gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
   { label: '새 예약', icon: Plus, to: '/bookings', gradient: 'linear-gradient(135deg, #10b981, #0d9488)' },
   { label: '영수증 업로드', icon: Upload, to: '/accounting', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' },
-  { label: 'RCE 발송', icon: Send, to: '/settings', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)' },
+  { label: 'RCE 발송', icon: Send, to: '/rce', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)' },
 ];
 
 const statusIcon = { completed: CheckCircle2, missed: PhoneMissed, active: Phone, voicemail: Clock };
@@ -93,7 +37,67 @@ const bookingBadge = {
 
 export default function Dashboard() {
   const { t } = useI18n();
+  const { stats, trends } = useDashboard();
+  const { bookings } = useBookings();
+  const { summary } = useAccounting();
+  
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+  const statCards = [
+    {
+      key: 'revenue',
+      label: '오늘 매출',
+      value: `₩${(stats?.todayRevenue || 0).toLocaleString()}`,
+      change: `${trends?.revenue || 0}%`,
+      up: (trends?.revenue || 0) >= 0,
+      icon: DollarSign,
+      gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      glow: 'rgba(59,130,246,0.3)',
+    },
+    {
+      key: 'monthly',
+      label: '이번 달 수입',
+      value: `₩${(summary?.totalIncome || 0).toLocaleString()}`,
+      change: `+${trends?.revenue || 0}%`,
+      up: true,
+      icon: TrendingUp,
+      gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      glow: 'rgba(139,92,246,0.3)',
+    },
+    {
+      key: 'calls',
+      label: '오늘 통화',
+      value: `${stats?.totalCallsToday || 0}`,
+      change: `+${trends?.calls || 0}`,
+      up: true,
+      icon: Phone,
+      gradient: 'linear-gradient(135deg, #10b981, #059669)',
+      glow: 'rgba(16,185,129,0.3)',
+    },
+    {
+      key: 'bookings',
+      label: '오늘 예약',
+      value: `${stats?.activeBookings || 0}`,
+      change: `${trends?.bookings || 0}`,
+      up: (trends?.bookings || 0) >= 0,
+      icon: CalendarDays,
+      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      glow: 'rgba(245,158,11,0.3)',
+    },
+  ];
+
+  const recentCalls = [
+    { name: '김민수', phone: '010-1234-5678', time: '14:32', duration: '2:15', status: 'completed' as const },
+    { name: '이지은', phone: '010-9876-5432', time: '13:45', duration: '5:02', status: 'completed' as const },
+  ];
+
+  const upcomingBookings = bookings.slice(0, 3).map(b => ({
+    name: b.customerName,
+    vehicle: b.vehicleModel || '차량',
+    time: b.time,
+    service: b.service,
+    status: b.status as keyof typeof bookingBadge
+  }));
 
   return (
     <div className="p-5 md:p-7 space-y-6 animate-fade-up">
@@ -117,7 +121,7 @@ export default function Dashboard() {
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
-        {STATS.map(({ key, label, value, change, up, icon: Icon, gradient, glow }) => (
+        {statCards.map(({ key, label, value, change, up, icon: Icon, gradient, glow }) => (
           <div
             key={key}
             className="card p-4 md:p-5 group cursor-default"
@@ -159,7 +163,7 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-1">
-            {RECENT_CALLS.map((call, i) => {
+            {recentCalls.map((call, i) => {
               const StatusIcon = statusIcon[call.status];
               return (
                 <div
@@ -198,8 +202,8 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-2.5">
-            {UPCOMING_BOOKINGS.map((b, i) => {
-              const badge = bookingBadge[b.status];
+            {upcomingBookings.map((b, i) => {
+              const badge = bookingBadge[b.status] || bookingBadge.confirmed;
               return (
                 <div
                   key={i}
@@ -243,14 +247,6 @@ export default function Dashboard() {
               to={to}
               className="flex flex-col items-center gap-2.5 p-4 rounded-2xl transition-all duration-300 group"
               style={{ border: '1px solid hsl(var(--border)/0.4)' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'transparent';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border)/0.4)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '';
-              }}
             >
               <div
                 className="w-13 h-13 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"

@@ -108,8 +108,8 @@ export async function callsApiRoutes(app: FastifyInstance) {
       status: 'active',
       durationSec: 0,
       transcript: [
-        { role: 'caller', text: '안녕하세요, 내일 오후 2시에 커트 예약 가능한가요?', timestamp: Date.now() - 3000 },
-        { role: 'agent',  text: '안녕하세요! 내일 오후 2시 커트 예약 확인해드리겠습니다.', timestamp: Date.now() - 2000 },
+        { role: 'caller', text: '안녕하세요, 내일 오후 2시에 엔진오일이랑 브레이크 패드 교체 가능한가요?', timestamp: Date.now() - 3000 },
+        { role: 'agent',  text: '안녕하세요! 오토메이트 정비소입니다. 내일 오후 2시 예약 가능 여부 확인해드리겠습니다.', timestamp: Date.now() - 2000 },
       ],
       copilotSuggestions: mockSuggestions([]),
     };
@@ -162,25 +162,25 @@ export async function callsApiRoutes(app: FastifyInstance) {
 
 function defaultSuggestions(): string[] {
   return [
-    '📅 예약 날짜/시간을 확인하세요',
-    '👤 고객 이름을 물어보세요',
-    '💬 원하는 서비스 종류를 확인하세요',
+    '📅 예약 날짜와 차량 번호를 확인하세요',
+    '🚗 차종과 정비 항목을 물어보세요',
+    '💰 예상 견적 범위를 안내하세요',
   ];
 }
 
 function mockSuggestions(transcript: TranscriptEntry[]): string[] {
-  if (transcript.some((t) => t.text.includes('예약'))) {
+  if (transcript.some((t) => t.text.includes('예약') || t.text.includes('교체'))) {
     return [
-      '📅 예약 가능한 날짜를 안내하세요',
-      '⏰ 원하는 시간대를 확인하세요',
-      '✅ 예약을 즉시 확정해도 될지 물어보세요',
+      '📅 엔진오일/패드 세트 할인 상품을 안내하세요',
+      '⏰ 차량 입고 시간을 확인하세요 (대차 필요 여부)',
+      '✅ 차량 번호를 확인하여 정비 이력을 조회하세요',
     ];
   }
-  if (transcript.some((t) => t.text.includes('가격') || t.text.includes('얼마'))) {
+  if (transcript.some((t) => t.text.includes('비용') || t.text.includes('공임') || t.text.includes('얼마'))) {
     return [
-      '💰 가격표를 안내하세요',
-      '🎁 현재 프로모션을 알려주세요',
-      '📲 카카오톡으로 가격표를 전송해드릴까요?',
+      '💰 공임 포함 정찰제 가격을 안내하세요',
+      '🎁 첫 방문 10% 부품 할인 혜택을 알려주세요',
+      '📲 SMS로 상세 견적서를 보내드릴까요?',
     ];
   }
   return defaultSuggestions();
