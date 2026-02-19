@@ -88,16 +88,16 @@
 
 /* Sidebar width breakpoint — only on lg (1024px+) */
 @media (min-width: 1024px) {
-  :root { --sidebar-width: 210px; }
+  :root { --sidebar-width: 240px; }
 }
 
 
 /* ===== Base ===== */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
 
 html {
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 16px;
   scroll-behavior: smooth;
 }
 
