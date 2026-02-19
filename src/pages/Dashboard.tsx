@@ -12,6 +12,7 @@ import {
   Wrench,
   Check,
   X,
+  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/hooks/useI18n';
@@ -26,36 +27,15 @@ import {
   Tooltip,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import {
+  WEEKLY_REVENUE,
+  MONTHLY_GOAL,
+  RECENT_CALLS,
+  UPCOMING_BOOKINGS,
+  formatWon as fmtWon,
+} from '@/lib/mock-data';
 
 // ─── Mock / derived data helpers ────────────────────────────────────────────
-
-const WEEKLY_REVENUE = [
-  { day: '월', revenue: 3_200_000 },
-  { day: '화', revenue: 4_100_000 },
-  { day: '수', revenue: 2_800_000 },
-  { day: '목', revenue: 5_200_000 },
-  { day: '금', revenue: 6_100_000 },
-  { day: '토', revenue: 4_500_000 },
-  { day: '일', revenue: 1_200_000 },
-];
-
-const MONTHLY_GOAL = { current: 38_720_000, target: 50_000_000 };
-
-const RECENT_CALLS = [
-  { id: 1, name: '김철수', phone: '010-1234-5678', time: '14:32', duration: '3:45', status: 'completed' as const },
-  { id: 2, name: '박영희', phone: '010-9876-5432', time: '13:15', duration: '1:22', status: 'completed' as const },
-  { id: 3, name: '이민호', phone: '010-5555-1234', time: '12:48', duration: '0:00', status: 'missed' as const },
-  { id: 4, name: '정수진', phone: '010-3333-7890', time: '11:20', duration: '5:10', status: 'completed' as const },
-  { id: 5, name: '최동욱', phone: '010-7777-4321', time: '10:05', duration: '0:00', status: 'missed' as const },
-];
-
-const UPCOMING_BOOKINGS = [
-  { id: 1, customer: '김영수', vehicle: '그랜저 IG', time: '15:00', service: '엔진오일 교환', status: 'confirmed' as const },
-  { id: 2, customer: '박지현', vehicle: '소나타 DN8', time: '15:30', service: '브레이크 패드 교환', status: 'confirmed' as const },
-  { id: 3, customer: '이준석', vehicle: 'BMW 520d', time: '16:00', service: '타이어 교환', status: 'pending' as const },
-  { id: 4, customer: '송미연', vehicle: '아반떼 CN7', time: '16:30', service: '종합 점검', status: 'confirmed' as const },
-  { id: 5, customer: '한지훈', vehicle: '투싼 NX4', time: '17:00', service: '에어컨 점검', status: 'pending' as const },
-];
 
 const QUICK_ACTIONS = [
   { label: 'AI 전화 에이전트', icon: Phone, href: '/calls', accent: 'bg-primary/15 text-primary hover:bg-primary/25' },
@@ -64,9 +44,7 @@ const QUICK_ACTIONS = [
   { label: 'RCE 캠페인', icon: Send, href: '/rce', accent: 'bg-rose-500/15 text-rose-400 hover:bg-rose-500/25' },
 ];
 
-function formatWon(n: number) {
-  return `₩${n.toLocaleString('ko-KR')}`;
-}
+const formatWon = fmtWon;
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -255,7 +233,7 @@ function RecentCallsList() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-medium text-[hsl(var(--text))] truncate">{call.name}</p>
                 <span className={cn(
                   'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
@@ -265,8 +243,13 @@ function RecentCallsList() {
                 )}>
                   {call.status === 'completed' ? '완료' : '부재중'}
                 </span>
+                {call.rce && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[hsl(var(--primary))/0.15] text-[hsl(var(--primary))] flex items-center gap-0.5">
+                    <Zap className="w-2.5 h-2.5" />RCE
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-[hsl(var(--text-muted))]">{call.phone}</p>
+              <p className="text-xs text-[hsl(var(--text-muted))]">{call.phone} {call.outcome && <span className="text-[hsl(var(--primary))/0.8]">· {call.outcome}</span>}</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-xs text-[hsl(var(--text-muted))] flex items-center gap-1">
@@ -300,11 +283,14 @@ function UpcomingBookingsList() {
             key={booking.id}
             className="flex items-center gap-3 p-3 rounded-lg bg-[hsl(var(--bg-card)/0.5)] hover:bg-[hsl(var(--bg-card))] transition-colors group"
           >
-            <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary)/0.15)] flex items-center justify-center shrink-0">
+            <div className={cn(
+              'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
+              booking.rce ? 'bg-[hsl(var(--primary))/0.2]' : 'bg-[hsl(var(--primary))/0.1]'
+            )}>
               <Car className="w-4 h-4 text-[hsl(var(--primary))]" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-medium text-[hsl(var(--text))] truncate">{booking.customer}</p>
                 <span className={cn(
                   'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
@@ -314,8 +300,13 @@ function UpcomingBookingsList() {
                 )}>
                   {booking.status === 'confirmed' ? '확정' : '대기중'}
                 </span>
+                {booking.rce && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[hsl(var(--primary))/0.15] text-[hsl(var(--primary))] flex items-center gap-0.5">
+                    <Zap className="w-2.5 h-2.5" />RCE 재방문
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-[hsl(var(--text-muted))]">{booking.vehicle} - {booking.service}</p>
+              <p className="text-xs text-[hsl(var(--text-muted))] truncate">{booking.vehicle} — {booking.service}</p>
             </div>
             <div className="text-right shrink-0 flex items-center gap-2">
               <p className="text-xs text-[hsl(var(--text-muted))] flex items-center gap-1">
@@ -339,10 +330,10 @@ function UpcomingBookingsList() {
 
 function SummaryRow({ stats }: { stats: DashboardStats }) {
   const summaryItems = [
-    { label: '완료 정비', value: '12건', icon: Wrench, color: 'text-emerald-400' },
+    { label: '완료 정비', value: '2건', icon: Wrench, color: 'text-emerald-400' },
     { label: '대기 예약', value: `${stats.pendingActions}건`, icon: CalendarDays, color: 'text-amber-400' },
     { label: '순수익', value: formatWon(Math.round(stats.todayRevenue * 0.77)), icon: TrendingUp, color: 'text-blue-400' },
-    { label: '부재중 전화', value: `${stats.missedCalls}건`, icon: PhoneMissed, color: 'text-rose-400' },
+    { label: 'RCE 월 성과', value: '₩4,200,000', icon: Zap, color: 'text-[hsl(var(--primary))]' },
   ];
 
   return (

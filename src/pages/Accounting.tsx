@@ -7,6 +7,7 @@ import {
   Plus,
   X,
   Upload,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +20,14 @@ import { accountingSummary, ledgerEntries, formatWon } from "@/lib/mock-data";
 
 const summaryCards = [
   {
-    label: "총 수입",
+    label: "이번 달 수입",
     value: formatWon(accountingSummary.totalIncome),
     icon: TrendingUp,
     color: "text-[hsl(var(--accent))]",
     bg: "bg-[hsl(var(--accent))/0.1]",
   },
   {
-    label: "총 지출",
+    label: "이번 달 지출",
     value: formatWon(accountingSummary.totalExpense),
     icon: TrendingDown,
     color: "text-rose-400",
@@ -43,18 +44,30 @@ const summaryCards = [
 
 function AccountingSummary() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {summaryCards.map((card) => (
-        <div key={card.label} className="v0-glass rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-[hsl(var(--text-muted))]">{card.label}</span>
-            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", card.bg)}>
-              <card.icon className={cn("w-4 h-4", card.color)} />
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="v0-glass rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-[hsl(var(--text-muted))]">{card.label}</span>
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", card.bg)}>
+                <card.icon className={cn("w-4 h-4", card.color)} />
+              </div>
             </div>
+            <p className="text-xl font-bold text-[hsl(var(--text))] tracking-tight">{card.value}</p>
           </div>
-          <p className="text-xl font-bold text-[hsl(var(--text))] tracking-tight">{card.value}</p>
+        ))}
+      </div>
+      {/* RCE Insight Banner */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[hsl(var(--primary))/0.3] bg-[hsl(var(--primary))/0.06]">
+        <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))/0.15] flex items-center justify-center shrink-0">
+          <Zap className="w-4 h-4 text-[hsl(var(--primary))]" />
         </div>
-      ))}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-[hsl(var(--primary))]">RCE 엔진 성과</p>
+          <p className="text-xs text-[hsl(var(--text-muted))]">이번 달 RCE 스마트알러트로 유도된 재방문 수익 <span className="font-bold text-[hsl(var(--primary))]">{formatWon(accountingSummary.rceContribution)}</span> (전체의 {Math.round(accountingSummary.rceContribution / accountingSummary.totalIncome * 100)}%)</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -221,7 +234,16 @@ function LedgerTable() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-[hsl(var(--text-muted))]">{entry.category}</td>
-                <td className="px-4 py-3 text-sm text-[hsl(var(--text))]">{entry.description}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[hsl(var(--text))]">{entry.description}</span>
+                    {entry.rce && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[hsl(var(--primary))/0.15] text-[hsl(var(--primary))] flex items-center gap-0.5 shrink-0">
+                        <Zap className="w-2.5 h-2.5" />RCE
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className={cn(
                   "px-4 py-3 text-sm font-medium text-right tabular-nums",
                   entry.type === "income" ? "text-[hsl(var(--accent))]" : "text-rose-500"

@@ -9,6 +9,7 @@ import {
   Check,
   Plus,
   Search,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,8 @@ import { allBookings } from "@/lib/mock-data";
 
 const stats = [
   { label: "오늘 예약", value: "6건", icon: CalendarDays, color: "text-[hsl(var(--primary))]", bg: "bg-[hsl(var(--primary))/0.1]" },
-  { label: "대기중", value: "3건", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
-  { label: "전체 예약", value: "9건", icon: CheckCircle, color: "text-[hsl(var(--accent))]", bg: "bg-[hsl(var(--accent))/0.1]" },
+  { label: "대기중", value: "2건", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
+  { label: "전체 예약", value: "8건", icon: CheckCircle, color: "text-[hsl(var(--accent))]", bg: "bg-[hsl(var(--accent))/0.1]" },
 ];
 
 function BookingStats() {
@@ -98,16 +99,24 @@ function BookingList() {
                     <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary))/0.1] flex items-center justify-center shrink-0">
                       <Car className="w-5 h-5 text-[hsl(var(--primary))]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
                         <p className="text-sm font-semibold text-[hsl(var(--text))]">{booking.customer}</p>
                         <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0", status.color)}>
                           {status.label}
                         </Badge>
+                        {booking.rce && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[hsl(var(--primary))/0.15] text-[hsl(var(--primary))] flex items-center gap-0.5">
+                            <Zap className="w-2.5 h-2.5" />RCE 재방문
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-[hsl(var(--text-muted))]">
                         {booking.vehicle} — {booking.service}
                       </p>
+                      {booking.note && (
+                        <p className="text-[10px] text-[hsl(var(--primary))/0.7] mt-0.5">{booking.note}</p>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right hidden sm:block">
