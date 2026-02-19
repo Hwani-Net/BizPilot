@@ -5,10 +5,10 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "calls": "AI Calls",
+    "calls": "AI Phone Agent",
     "bookings": "Bookings",
-    "accounting": "Accounting",
-    "rce": "RCE Alerts",
+    "accounting": "Ledger",
+    "rce": "RCE Engine",
     "settings": "Settings"
   },
   "dashboard": {

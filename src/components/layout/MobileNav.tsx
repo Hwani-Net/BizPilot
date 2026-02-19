@@ -22,7 +22,7 @@ export default function MobileNav() {
   const { t } = useI18n();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[hsl(var(--border)/0.5)] z-50 safe-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 glass border-t border-[hsl(var(--border)/0.5)] z-50 safe-bottom">
       <div className="flex items-center justify-around px-2 py-2">
         {NAV_ITEMS.map(({ path, icon: Icon, labelKey }) => (
           <NavLink

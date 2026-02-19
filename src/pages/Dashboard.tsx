@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/hooks/useI18n';
-import { useDashboard } from '@/hooks/useDashboard';
+import { useDashboard, type DashboardStats, type DashboardTrends } from '@/hooks/useDashboard';
 import {
   BarChart,
   Bar,
@@ -70,20 +70,20 @@ function formatWon(n: number) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function KpiCards({ stats, trends }: { stats: ReturnType<typeof useDashboard>['stats'], trends: ReturnType<typeof useDashboard>['trends'] }) {
+function KpiCards({ stats, trends }: { stats: DashboardStats, trends: DashboardTrends }) {
   const cards = [
     {
       label: '오늘 매출',
-      value: formatWon(stats?.todayRevenue ?? 2_450_000),
+      value: formatWon(stats.todayRevenue),
       icon: DollarSign,
-      trend: `+${trends?.revenue ?? 12.5}%`,
-      trendUp: (trends?.revenue ?? 12.5) >= 0,
+      trend: `+${trends.revenue}%`,
+      trendUp: trends.revenue >= 0,
       accent: 'text-blue-400',
       bg: 'bg-blue-400/10',
     },
     {
       label: '월간 수입',
-      value: formatWon(stats?.monthlyRevenue ?? 38_720_000),
+      value: formatWon(stats.monthlyRevenue),
       icon: TrendingUp,
       trend: `+8.2%`,
       trendUp: true,
@@ -92,39 +92,39 @@ function KpiCards({ stats, trends }: { stats: ReturnType<typeof useDashboard>['s
     },
     {
       label: '오늘 통화',
-      value: `${stats?.totalCallsToday ?? 23}건`,
+      value: `${stats.totalCallsToday}건`,
       icon: Phone,
-      trend: `+3건`,
-      trendUp: true,
+      trend: `+${trends.calls}건`,
+      trendUp: trends.calls >= 0,
       accent: 'text-amber-400',
       bg: 'bg-amber-400/10',
     },
     {
       label: '오늘 예약',
-      value: `${stats?.activeBookings ?? 8}건`,
+      value: `${stats.activeBookings}건`,
       icon: CalendarDays,
-      trend: `-2건`,
-      trendUp: false,
+      trend: `${trends.bookings}건`,
+      trendUp: trends.bookings >= 0,
       accent: 'text-rose-400',
       bg: 'bg-rose-400/10',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {cards.map((card) => (
         <div
           key={card.label}
           className="v0-glass v0-glass-hover rounded-xl p-4 lg:p-5"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-[hsl(var(--text-muted))]">{card.label}</span>
-            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', card.bg)}>
-              <card.icon className={cn('w-4 h-4', card.accent)} />
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-[hsl(var(--text-muted))]">{card.label}</span>
+            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', card.bg)}>
+              <card.icon className={cn('w-5 h-5', card.accent)} />
             </div>
           </div>
           <p className="text-xl lg:text-2xl font-bold text-[hsl(var(--text))] tracking-tight">{card.value}</p>
-          <p className={cn('text-xs font-medium mt-1', card.trendUp ? 'text-emerald-400' : 'text-rose-400')}>
+          <p className={cn('text-xs font-medium mt-1.5', card.trendUp ? 'text-emerald-400' : 'text-rose-400')}>
             {card.trend}{' '}
             <span className="text-[hsl(var(--text-muted))]">전일 대비</span>
           </p>
@@ -142,14 +142,14 @@ function QuickActions() {
           key={action.label}
           to={action.href}
           className={cn(
-            'v0-glass rounded-xl p-4 flex flex-col items-center gap-2.5 transition-all hover:scale-[1.02]',
+            'v0-glass rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:scale-[1.03]',
             action.accent
           )}
         >
-          <div className="w-10 h-10 rounded-xl bg-[hsl(var(--bg))/0.3] flex items-center justify-center">
-            <action.icon className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--bg))/0.3] flex items-center justify-center">
+            <action.icon className="w-6 h-6" />
           </div>
-          <span className="text-xs font-medium text-center">{action.label}</span>
+          <span className="text-sm font-semibold text-center">{action.label}</span>
         </Link>
       ))}
     </div>
@@ -160,13 +160,13 @@ function RevenueChart() {
   const goalPercent = Math.round((MONTHLY_GOAL.current / MONTHLY_GOAL.target) * 100);
 
   return (
-    <div className="v0-glass rounded-xl p-5 flex flex-col gap-5">
+    <div className="v0-glass rounded-2xl p-6 flex flex-col gap-6">
       <div>
-        <h3 className="text-sm font-semibold text-[hsl(var(--text))]">주간 매출</h3>
-        <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">이번 주 일별 매출 현황</p>
+        <h3 className="text-base font-semibold text-[hsl(var(--text))]">주간 매출</h3>
+        <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">이번 주 일별 매출 현황</p>
       </div>
 
-      <div className="h-[200px] w-full">
+      <div className="h-[220px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={WEEKLY_REVENUE} barSize={32}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" vertical={false} />
@@ -227,11 +227,11 @@ function RevenueChart() {
 
 function RecentCallsList() {
   return (
-    <div className="v0-glass rounded-xl p-5">
+    <div className="v0-glass rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--text))]">최근 통화</h3>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">오늘 수신된 전화 목록</p>
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">최근 통화</h3>
+          <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">오늘 수신된 전화 목록</p>
         </div>
         <span className="text-xs bg-[hsl(var(--bg-card))] text-[hsl(var(--text-muted))] px-2 py-1 rounded-full font-medium">
           {RECENT_CALLS.length}건
@@ -283,11 +283,11 @@ function RecentCallsList() {
 
 function UpcomingBookingsList() {
   return (
-    <div className="v0-glass rounded-xl p-5">
+    <div className="v0-glass rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--text))]">다가오는 예약</h3>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">오늘 남은 예약 일정</p>
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">다가오는 예약</h3>
+          <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">오늘 남은 예약 일정</p>
         </div>
         <span className="text-xs bg-[hsl(var(--bg-card))] text-[hsl(var(--text-muted))] px-2 py-1 rounded-full font-medium">
           {UPCOMING_BOOKINGS.length}건
@@ -337,16 +337,16 @@ function UpcomingBookingsList() {
   );
 }
 
-function SummaryRow({ stats }: { stats: ReturnType<typeof useDashboard>['stats'] }) {
+function SummaryRow({ stats }: { stats: DashboardStats }) {
   const summaryItems = [
     { label: '완료 정비', value: '12건', icon: Wrench, color: 'text-emerald-400' },
-    { label: '대기 예약', value: '5건', icon: CalendarDays, color: 'text-amber-400' },
-    { label: '순수익', value: formatWon(stats?.todayRevenue ? stats.todayRevenue * 0.77 : 1_890_000), icon: TrendingUp, color: 'text-blue-400' },
-    { label: '부재중 전화', value: '3건', icon: PhoneMissed, color: 'text-rose-400' },
+    { label: '대기 예약', value: `${stats.pendingActions}건`, icon: CalendarDays, color: 'text-amber-400' },
+    { label: '순수익', value: formatWon(Math.round(stats.todayRevenue * 0.77)), icon: TrendingUp, color: 'text-blue-400' },
+    { label: '부재중 전화', value: `${stats.missedCalls}건`, icon: PhoneMissed, color: 'text-rose-400' },
   ];
 
   return (
-    <div className="v0-glass rounded-xl p-4">
+    <div className="v0-glass rounded-2xl p-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryItems.map((item) => (
           <div key={item.label} className="flex items-center gap-3">
@@ -373,7 +373,7 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="p-4 lg:p-6 flex flex-col gap-5">
+    <div className="p-5 lg:p-6 flex flex-col gap-5">
       {/* Header */}
       <div>
         <h2 className="text-xl lg:text-2xl font-bold text-[hsl(var(--text))] tracking-tight">
@@ -391,7 +391,7 @@ export default function Dashboard() {
       <QuickActions />
 
       {/* Revenue Chart + Recent Calls */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <RevenueChart />
         <RecentCallsList />
       </div>

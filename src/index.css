@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+
 
 /* ================================================================
    BizPilot Design System v2 — Premium Polish
@@ -33,6 +37,23 @@
   /* Ambient glow — very subtle in light mode */
   --glow-primary: rgba(59, 130, 246, 0.06);
   --glow-accent: rgba(139, 92, 246, 0.04);
+
+  /* ── Shadcn/UI standard variable aliases ── */
+  --background: hsl(225, 20%, 96%);
+  --foreground: hsl(225, 25%, 10%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(225, 25%, 10%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(225, 25%, 10%);
+  --secondary: hsl(225, 15%, 90%);
+  --secondary-foreground: hsl(225, 25%, 15%);
+  --muted: hsl(225, 15%, 90%);
+  --muted-foreground: hsl(225, 12%, 48%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --input: hsl(225, 18%, 89%);
+  --ring: hsl(217, 91%, 60%);
+  --radius: 0.625rem;
 }
 
 [data-theme="dark"] {
@@ -47,11 +68,27 @@
 
   --glow-primary: rgba(59, 130, 246, 0.08);
   --glow-accent: rgba(139, 92, 246, 0.06);
+
+  /* ── Shadcn/UI standard variable aliases (dark mode) ── */
+  --background: hsl(225, 30%, 7%);
+  --foreground: hsl(225, 15%, 95%);
+  --card: hsl(225, 25%, 11%);
+  --card-foreground: hsl(225, 15%, 95%);
+  --popover: hsl(225, 25%, 11%);
+  --popover-foreground: hsl(225, 15%, 95%);
+  --secondary: hsl(225, 18%, 18%);
+  --secondary-foreground: hsl(225, 15%, 85%);
+  --muted: hsl(225, 18%, 18%);
+  --muted-foreground: hsl(225, 10%, 55%);
+  --destructive: hsl(0, 70%, 50%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --input: hsl(225, 18%, 18%);
+  --ring: hsl(217, 91%, 60%);
 }
 
-/* Sidebar width breakpoint */
-@media (min-width: 768px) {
-  :root { --sidebar-width: 256px; }
+/* Sidebar width breakpoint — only on lg (1024px+) */
+@media (min-width: 1024px) {
+  :root { --sidebar-width: 210px; }
 }
 
 
@@ -60,7 +97,7 @@
 
 html {
   font-family: var(--font-main);
-  font-size: 16px;
+  font-size: 14px;
   scroll-behavior: smooth;
 }
 

@@ -5,10 +5,10 @@
   },
   "nav": {
     "dashboard": "대시보드",
-    "calls": "AI 전화",
+    "calls": "AI 전화 에이전트",
     "bookings": "예약 관리",
-    "accounting": "회계",
-    "rce": "재방문 유도",
+    "accounting": "회계 장부",
+    "rce": "RCE 엔진",
     "settings": "설정"
   },
   "dashboard": {
