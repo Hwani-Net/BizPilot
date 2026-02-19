@@ -13,6 +13,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "greeting": "Hello, Gangnam AutoCare",
     "todayRevenue": "Today's Revenue",
     "weekRevenue": "This Week",
     "monthRevenue": "This Month",

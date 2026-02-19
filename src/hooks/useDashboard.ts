@@ -8,6 +8,7 @@ export interface DashboardStats {
   activeBookings: number;
   pendingActions: number;
   totalCallsToday: number;
+  missedCalls: number;
 }
 
 export interface DashboardTrends {

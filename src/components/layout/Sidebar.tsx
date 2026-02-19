@@ -37,19 +37,23 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col h-screen fixed left-0 top-0 z-40 border-r border-[hsl(var(--border)/0.4)]"
+      className="hidden md:flex flex-col h-screen fixed left-0 top-0 z-40"
       style={{
         width: '256px',
         background: 'hsl(var(--bg-glass))',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        backdropFilter: 'blur(28px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+        borderRight: '1px solid hsl(var(--border) / 0.3)',
       }}
     >
       {/* ── Logo ── */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-[hsl(var(--border)/0.4)]">
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-[hsl(var(--border)/0.3)]">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, hsl(217,91%,60%), hsl(256,80%,65%))' }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0 animate-float"
+          style={{
+            background: 'linear-gradient(135deg, hsl(217,91%,60%), hsl(256,80%,65%))',
+            boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
+          }}
         >
           <Zap size={18} />
         </div>
@@ -62,18 +66,26 @@ export default function Sidebar() {
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ path, icon: Icon, labelKey }) => (
           <NavLink
             key={path}
             to={path}
             end={path === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group ${
                 isActive
-                  ? 'bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] shadow-sm border border-[hsl(var(--primary)/0.2)]'
-                  : 'text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-card))] hover:text-[hsl(var(--text))]'
+                  ? 'text-white shadow-md'
+                  : 'text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-card)/0.6)] hover:text-[hsl(var(--text))]'
               }`
+            }
+            style={({ isActive }) =>
+              isActive
+                ? {
+                    background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+                    boxShadow: '0 4px 14px hsla(var(--primary) / 0.3)',
+                  }
+                : {}
             }
           >
             <Icon size={19} className="flex-shrink-0" />
@@ -83,9 +95,9 @@ export default function Sidebar() {
       </nav>
 
       {/* ── Bottom Controls ── */}
-      <div className="px-4 py-4 border-t border-[hsl(var(--border)/0.4)] space-y-2">
+      <div className="px-4 py-4 border-t border-[hsl(var(--border)/0.3)] space-y-2.5">
         {/* Theme */}
-        <div className="flex items-center gap-1 rounded-xl p-1 bg-[hsl(var(--bg)/0.6)]">
+        <div className="flex items-center gap-1 rounded-xl p-1 bg-[hsl(var(--bg)/0.5)]">
           {THEME_OPTIONS.map(({ value, icon: Icon }) => (
             <button
               key={value}
@@ -105,11 +117,16 @@ export default function Sidebar() {
         {/* Language */}
         <button
           onClick={toggleLocale}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-card))] hover:text-[hsl(var(--text))] transition-all duration-200"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-card)/0.6)] hover:text-[hsl(var(--text))] transition-all duration-200"
         >
           <Languages size={14} />
           <span>{locale === 'ko' ? '한국어 → EN' : 'EN → 한국어'}</span>
         </button>
+
+        {/* Version */}
+        <p className="text-center text-[9px] text-[hsl(var(--text-muted)/0.5)] font-medium tracking-wider">
+          BizPilot v1.0 · Hackathon 2026
+        </p>
       </div>
     </aside>
   );

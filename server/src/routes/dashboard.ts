@@ -20,6 +20,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
 
     // 3. Call Stats (Today)
     const totalCalls = (db.prepare(`SELECT COUNT(*) as count FROM call_records WHERE started_at LIKE ?`).get(`${today}%`) as any).count;
+    const missedCalls = (db.prepare(`SELECT COUNT(*) as count FROM call_records WHERE started_at LIKE ? AND status = 'missed'`).get(`${today}%`) as any).count;
 
     // 4. Comparison (Prev month mock for now, or real if data exists)
     // For demo, we keep the trend percentage slightly dynamic
@@ -33,6 +34,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
         activeBookings: todayBookings,
         pendingActions: totalBookings - todayBookings, // Simplified logic
         totalCallsToday: totalCalls,
+        missedCalls: missedCalls,
       },
       trends: {
         revenue: incomeGrowth,

@@ -13,6 +13,7 @@
   },
   "dashboard": {
     "title": "대시보드",
+    "greeting": "안녕하세요, 강남 오토케어",
     "todayRevenue": "오늘 매출",
     "weekRevenue": "이번 주 매출",
     "monthRevenue": "이번 달 매출",
