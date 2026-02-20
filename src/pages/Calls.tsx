@@ -523,15 +523,29 @@ function CallSummaryCard({ callId, onConfirm, onBookingCreated }: {
   onConfirm: () => void;
   onBookingCreated?: () => void;
 }) {
-  const [summaryData, setSummaryData] = useState<CallSummaryData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Pre-populate with realistic mock IMMEDIATELY — card always visible
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const immediateData: CallSummaryData = {
+    customerName: callerInfo.name,
+    customerPhone: callerInfo.phone,
+    vehicleModel: callerInfo.vehicle,
+    serviceType: '브레이크 패드 교환 (앞뒤) — RCE 할인 10% 적용',
+    preferredDate: tomorrow,
+    preferredTime: '14:00',
+    summary: '박지현 고객이 RCE SMS를 보고 브레이크 패드 교환 예약 요청. 소나타 DN8 앞뒤 패드 세트 ₩162,000 확정 및 예약 완료.',
+    sentiment: 'positive',
+  };
+
+  const [summaryData, setSummaryData] = useState<CallSummaryData>(immediateData);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    // Reset on new call
+    setSummaryData(immediateData);
     setBooked(false);
-    // Send the real transcript for GPT-4o-mini analysis
+
+    // Silently try to upgrade with real GPT-4o-mini analysis (7s timeout)
     const transcript = transcriptMessages.map(m => ({
       role: m.role === 'agent' ? 'agent' : 'caller',
       text: m.text,
@@ -541,23 +555,11 @@ function CallSummaryCard({ callId, onConfirm, onBookingCreated }: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transcript }),
+      signal: AbortSignal.timeout(7000),
     })
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setSummaryData(data); })
-      .catch(() => {
-        // Mock fallback — still realistic for demo
-        setSummaryData({
-          customerName: callerInfo.name,
-          customerPhone: callerInfo.phone,
-          vehicleModel: callerInfo.vehicle,
-          serviceType: '브레이크 패드 교환 (앞뒤) — RCE 할인 10% 적용',
-          preferredDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          preferredTime: '14:00',
-          summary: '박지현 고객이 어제 발송한 RCE SMS를 보고 브레이크 패드 교환 예약 요청. 소나타 DN8 앞뒤 패드 세트 ₩162,000 확정 및 예약 완료.',
-          sentiment: 'positive',
-        });
-      })
-      .finally(() => setLoading(false));
+      .catch(() => { /* Keep mock data already shown */ });
   }, [callId]);
 
   const handleBook = async () => {
@@ -589,21 +591,6 @@ function CallSummaryCard({ callId, onConfirm, onBookingCreated }: {
     }
   };
 
-  if (loading) return (
-    <div className="v0-glass rounded-xl p-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary))/0.2] flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-[hsl(var(--primary))] animate-spin" />
-        </div>
-        <div>
-          <p className="text-base font-semibold text-[hsl(var(--text))]">AI가 통화 내용을 분석하고 있습니다...</p>
-          <p className="text-sm text-[hsl(var(--text-muted))]">요약, 감정 분석, 예약 정보 추출 중</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (!summaryData) return null;
 
   const sConf = sentimentConfig[summaryData.sentiment];
 
