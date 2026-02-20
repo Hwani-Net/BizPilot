@@ -14,17 +14,19 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 async function bootstrap() {
   const app = Fastify({ logger: { level: 'info' } });
 
-  // CORS — allow frontend origins
-  const allowedOrigins = [
-    'http://localhost:5173',   // Vite dev
-    'http://localhost:5174',   // Vite dev alt
-    'http://localhost:4173',   // Vite preview
-    process.env.FRONTEND_URL, // Production (Cloudflare Pages)
-  ].filter(Boolean) as string[];
-
+  // CORS — allow frontend origins (localhost + all Vercel previews)
   await app.register(FastifyCors, {
-    origin: allowedOrigins,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // server-to-server / curl
+      const allowed =
+        /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+        /\.vercel\.app$/.test(origin) ||
+        /\.onrender\.com$/.test(origin) ||
+        origin === (process.env.FRONTEND_URL ?? '');
+      cb(null, allowed);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
   });
 
   // Enable WebSocket support
