@@ -40,6 +40,8 @@ export default function PartsScanner() {
   // Ensure stream gets attached to video element properly to prevent initial freeze
   useEffect(() => {
     let playInterval: number;
+    let fallbackTimeout: number;
+
     if (mode === 'camera' && videoRef.current && stream) {
       const video = videoRef.current;
       video.srcObject = stream;
@@ -52,7 +54,16 @@ export default function PartsScanner() {
 
       const attemptPlay = async () => {
         try {
-          if (video.paused) await video.play();
+          if (video.paused) {
+            await video.play();
+          }
+          // Force a CSS repaint to fix Android rendering freeze on the first frame
+          if (video.style) {
+            video.style.transform = 'scale(1.0001)';
+            fallbackTimeout = window.setTimeout(() => {
+              if (video.style) video.style.transform = 'scale(1)';
+            }, 50);
+          }
         } catch (err) {
           console.error('Autoplay prevented:', err);
         }
@@ -72,13 +83,15 @@ export default function PartsScanner() {
     
     return () => {
       if (playInterval) clearInterval(playInterval);
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
     };
   }, [mode, stream]);
 
   const startCamera = async () => {
     try {
+      // Simplify constraints for maximum compatibility on Android OS
       const constraints = { 
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+        video: { facingMode: 'environment' } 
       };
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
