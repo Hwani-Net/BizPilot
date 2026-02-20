@@ -47,6 +47,16 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
       setIsActive(false);
       setState("idle");
     } else {
+      // Unlock audio for browsers that block autoplay without user gesture
+      try {
+        const unlock = new Audio('/audio/msg_1.mp3');
+        unlock.volume = 0;
+        unlock.play().then(() => {
+          unlock.pause();
+          unlock.currentTime = 0;
+        }).catch(() => {});
+      } catch (e) {}
+
       setIsActive(true);
       setState("listening");
     }
@@ -161,7 +171,6 @@ function Transcript({ isActive }: { isActive: boolean }) {
 
     const playStep = (index: number) => {
       if (isCancelled || index >= transcriptMessages.length) {
-        // 끝나면 코파일럿 등에 종료 시그널을 줄 수도 있으나 현재는 표시만
         return;
       }
       
@@ -170,22 +179,23 @@ function Transcript({ isActive }: { isActive: boolean }) {
       const msg = transcriptMessages[index];
       currentAudio = new Audio(`/audio/msg_${msg.id}.mp3`);
       
+      // Ensure loud volume
+      currentAudio.volume = 1.0;
+      
       currentAudio.onended = () => {
         if (!isCancelled) {
-          setTimeout(() => playStep(index + 1), 600); // 이전 대사 끝나고 0.6초 뒤 다음 대사
+          setTimeout(() => playStep(index + 1), 500);
         }
       };
       
       currentAudio.play().catch((e) => {
-        console.warn('Audio playback restricted by browser autoplay policy:', e);
-        // 오디오 재생 실패시 기본 타이머 폴백
+        console.warn('Audio playback restricted/failed:', e);
         if (!isCancelled) {
           setTimeout(() => playStep(index + 1), 2500);
         }
       });
     };
 
-    // 첫 메시지 시작 전 살짝 딜레이
     setTimeout(() => {
       if (!isCancelled) playStep(0);
     }, 1000);
@@ -194,6 +204,7 @@ function Transcript({ isActive }: { isActive: boolean }) {
       isCancelled = true;
       if (currentAudio) {
         currentAudio.pause();
+        currentAudio.src = "";
       }
     };
   }, [isActive]);
