@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/hooks/useI18n';
-import { useDashboard, type DashboardStats, type DashboardTrends } from '@/hooks/useDashboard';
+import { useDashboard, type DashboardStats, type DashboardTrends, type WeeklyRevenue } from '@/hooks/useDashboard';
 import {
   BarChart,
   Bar,
@@ -28,7 +28,6 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import {
-  WEEKLY_REVENUE,
   MONTHLY_GOAL,
   RECENT_CALLS,
   UPCOMING_BOOKINGS,
@@ -134,19 +133,25 @@ function QuickActions() {
   );
 }
 
-function RevenueChart() {
+function RevenueChart({ data }: { data: WeeklyRevenue[] }) {
   const goalPercent = Math.round((MONTHLY_GOAL.current / MONTHLY_GOAL.target) * 100);
 
   return (
     <div className="v0-glass rounded-2xl p-6 flex flex-col gap-6">
       <div>
         <h3 className="text-base font-semibold text-[hsl(var(--text))]">주간 매출</h3>
-        <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">이번 주 일별 매출 현황</p>
+        <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">최근 7일간의 매출 현황</p>
       </div>
 
       <div className="h-[220px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={WEEKLY_REVENUE} barSize={32}>
+          <BarChart data={data} barSize={32}>
+            <defs>
+              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" vertical={false} />
             <XAxis
               dataKey="day"
@@ -168,14 +173,15 @@ function RevenueChart() {
                 backdropFilter: 'blur(12px)',
                 color: 'hsl(var(--text))',
                 fontSize: '12px',
+                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
               }}
-              formatter={(value: unknown) => [
-                formatWon(typeof value === 'number' ? value : 0),
-                '매출',
-              ]}
-              cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+              formatter={(value: any, _name: any, props: any) => {
+                const dateText = props?.payload?.fullDate || '';
+                return [formatWon(typeof value === 'number' ? value : 0), `매출 (${dateText})`];
+              }}
+              cursor={{ fill: 'hsl(var(--primary) / 0.05)' }}
             />
-            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="revenue" fill="url(#colorRevenue)" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -357,7 +363,7 @@ function SummaryRow({ stats }: { stats: DashboardStats }) {
 
 export default function Dashboard() {
   const { t } = useI18n();
-  const { stats, trends } = useDashboard();
+  const { stats, trends, weeklyRevenue } = useDashboard();
 
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
@@ -383,7 +389,7 @@ export default function Dashboard() {
 
       {/* Revenue Chart + Recent Calls */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <RevenueChart />
+        <RevenueChart data={weeklyRevenue} />
         <RecentCallsList />
       </div>
 

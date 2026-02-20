@@ -18,6 +18,12 @@ export interface DashboardTrends {
   bookings: number;
 }
 
+export interface WeeklyRevenue {
+  day: string;
+  revenue: number;
+  fullDate: string;
+}
+
 // Demo fallback data matching V0 design
 const DEMO_STATS: DashboardStats = {
   todayRevenue: 2_450_000,
@@ -35,6 +41,16 @@ const DEMO_TRENDS: DashboardTrends = {
   bookings: -2,
 };
 
+const DEMO_WEEKLY_REVENUE: WeeklyRevenue[] = [
+  { day: '월', revenue: 1200000, fullDate: '2026-02-16' },
+  { day: '화', revenue: 2100000, fullDate: '2026-02-17' },
+  { day: '수', revenue: 1800000, fullDate: '2026-02-18' },
+  { day: '목', revenue: 3200000, fullDate: '2026-02-19' },
+  { day: '금', revenue: 2900000, fullDate: '2026-02-20' },
+  { day: '토', revenue: 4500000, fullDate: '2026-02-21' },
+  { day: '일', revenue: 3800000, fullDate: '2026-02-22' },
+];
+
 function hasRealData(s: DashboardStats): boolean {
   // Only consider it "real" data if there's actual revenue
   return s.todayRevenue > 0 && s.monthlyRevenue > 0;
@@ -43,6 +59,7 @@ function hasRealData(s: DashboardStats): boolean {
 export function useDashboard() {
   const [stats, setStats] = useState<DashboardStats>(DEMO_STATS);
   const [trends, setTrends] = useState<DashboardTrends>(DEMO_TRENDS);
+  const [weeklyRevenue, setWeeklyRevenue] = useState<WeeklyRevenue[]>(DEMO_WEEKLY_REVENUE);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
@@ -54,9 +71,8 @@ export function useDashboard() {
         // Only use API data if it contains real values, otherwise keep demo
         if (data.stats && hasRealData(data.stats)) {
           setStats(data.stats);
-        }
-        if (data.trends) {
-          setTrends(data.trends);
+          if (data.trends) setTrends(data.trends);
+          if (data.weeklyRevenue) setWeeklyRevenue(data.weeklyRevenue);
         }
       }
       // If fetch fails or returns empty data, DEMO_STATS remain in state
@@ -71,5 +87,5 @@ export function useDashboard() {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, trends, loading, refresh: fetchStats };
+  return { stats, trends, weeklyRevenue, loading, refresh: fetchStats };
 }

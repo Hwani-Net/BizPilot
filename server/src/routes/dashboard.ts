@@ -7,7 +7,8 @@ export async function dashboardRoutes(app: FastifyInstance) {
    * Returns summary stats for the dashboard based on REAL database data.
    */
   app.get('/stats', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const todayObj = new Date();
+    const today = todayObj.toISOString().slice(0, 10);
     const thisMonth = today.slice(0, 7);
 
     // 1. Financial Stats (This Month)
@@ -45,6 +46,26 @@ export async function dashboardRoutes(app: FastifyInstance) {
       .eq('type', 'income');
     const todayRevenue = (todayIncomeData ?? []).reduce((sum, r) => sum + r.amount, 0);
 
+    // 5. Weekly Revenue Data (last 7 days)
+    const weeklyRevenue = [];
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(todayObj);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayName = dayNames[d.getDay()];
+
+      const { data: dayData } = await supabase
+        .from('ledger_entries')
+        .select('amount')
+        .eq('date', dateStr)
+        .eq('type', 'income');
+      
+      const revenue = (dayData ?? []).reduce((sum, r) => sum + r.amount, 0);
+      weeklyRevenue.push({ day: dayName, revenue, fullDate: dateStr });
+    }
+
     // Demo trend values
     const incomeGrowth = 12.5;
     const expenseGrowth = -5.2;
@@ -64,6 +85,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
         calls: 3.8,
         bookings: -1.2,
       },
+      weeklyRevenue,
     };
   });
 }
