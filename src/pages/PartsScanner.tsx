@@ -39,12 +39,40 @@ export default function PartsScanner() {
 
   // Ensure stream gets attached to video element properly to prevent initial freeze
   useEffect(() => {
+    let playInterval: number;
     if (mode === 'camera' && videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.onloadedmetadata = () => {
-        videoRef.current?.play().catch(e => console.error("Video play failed:", e));
+      const video = videoRef.current;
+      video.srcObject = stream;
+      
+      // Explicitly set DOM attributes for strict mobile browsers
+      video.setAttribute('autoplay', '');
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      video.muted = true;
+
+      const attemptPlay = async () => {
+        try {
+          if (video.paused) await video.play();
+        } catch (err) {
+          console.error('Autoplay prevented:', err);
+        }
       };
+
+      video.onloadedmetadata = attemptPlay;
+      
+      // Force play check every 500ms until successful
+      playInterval = window.setInterval(() => {
+        if (!video.paused) {
+          clearInterval(playInterval);
+        } else {
+          attemptPlay();
+        }
+      }, 500);
     }
+    
+    return () => {
+      if (playInterval) clearInterval(playInterval);
+    };
   }, [mode, stream]);
 
   const startCamera = async () => {
