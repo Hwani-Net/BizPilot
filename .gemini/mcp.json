@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "google-maps": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-google-maps"
+      ],
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "AIzaSyAOkSX60kQsexDJlQeQxjXgmLDB9_MYKv4"
+      }
+    },
+    "postgres-supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@zeddotdev/postgres-context-server",
+        "postgresql://postgres.qrgpxowuemqcsbbgztse:Dja35690482.%23@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres"
+      ]
+    },
+    "google-workspace": {
+      "_comment": "Google Workspace MCP (epaproditus/google-workspace-mcp-server 또는 taylorwilsdon/google_workspace_mcp). OAuth 인증(credentials.json)이 선행되어야 시작할 수 있습니다. 자세한 설정은 해당 GitHub 저장소를 참고하세요.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "google-workspace-mcp-server"   
+      ],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "E:\\\\AI_Programing\\\\client_secret_524980781774-683d54jmpv4peu91t3lsns6icfj1liii.apps.googleusercontent.com.json"
+      }
+    },
+    "notebooklm": {
+      "command": "notebooklm-mcp",
+      "args": [
+        "--config",
+        "C:\\Users\\AIcreator\\notebooklm-config.json",
+        "server"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

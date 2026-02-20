@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Car,
@@ -10,7 +10,11 @@ import {
   AlertTriangle,
   Send,
   Bell,
+  Loader2,
+  Zap,
 } from "lucide-react";
+import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
-const vehicles = [
+const initialVehicles = [
   {
     id: 1,
     owner: "김민수",
@@ -100,7 +104,7 @@ const smsHistory = [
 
 // ─── Content Components ──────────────────────────────────────────────────────
 
-function VehicleList() {
+function VehicleList({ vehicles }: { vehicles: typeof initialVehicles }) {
   const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-4">
@@ -171,13 +175,13 @@ function VehicleList() {
 
             {/* Badge */}
             <Badge variant="secondary" className={cn(
-              "text-[10px] w-fit",
-              car.rceStatus === "active" ? "bg-[hsl(var(--primary)_/_0.15)] text-[hsl(var(--primary))]" :
-              car.rceStatus === "warning" ? "bg-amber-500/15 text-amber-400" :
+              "text-[10px] w-fit border-0",
+              car.rceStatus === "active" ? "bg-emerald-500/15 text-emerald-400" : // Changed to emerald for active status to stand out
+              car.rceStatus === "warning" ? "bg-amber-500/15 text-amber-400 animate-pulse" : // Added pulse animation
               "bg-[hsl(var(--bg-elevated))] text-[hsl(var(--text-muted))]"
             )}>
-              {car.rceStatus === "active" ? "RCE 활성" :
-               car.rceStatus === "warning" ? "점검 필요" : "미가입"}
+              {car.rceStatus === "active" ? "RCE 모니터링 중" :
+               car.rceStatus === "warning" ? "알림 발송 필요" : "미가입"}
             </Badge>
             <button
               onClick={() => navigate(`/vehicles/${encodeURIComponent(car.phone)}`)}
@@ -193,6 +197,25 @@ function VehicleList() {
 }
 
 function VisitRegistration() {
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = () => {
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      toast.success("방문 및 정비 내역이 성공적으로 등록되었습니다!", {
+        icon: '📝',
+        description: '차량 RCE 주기가 자동으로 재계산됩니다.'
+      });
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#3b82f6', '#f59e0b']
+      });
+    }, 1200);
+  };
+
   return (
     <div className="v0-glass rounded-xl p-6 max-w-2xl mx-auto mt-4">
       <h3 className="text-base font-bold text-[hsl(var(--text))] mb-1">방문/정비 등록</h3>
@@ -202,11 +225,11 @@ function VisitRegistration() {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <span className="text-xs text-[hsl(var(--text-muted))]">차량 번호</span>
-            <Input placeholder="12가 3456" className="bg-[hsl(var(--bg-elevated)_/_0.5)]" />
+            <Input placeholder="12가 3456" className="bg-[hsl(var(--bg-elevated)_/_0.5)] border-[hsl(var(--border))]" />
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-xs text-[hsl(var(--text-muted))]">주행 거리 (km)</span>
-            <Input type="number" placeholder="50000" className="bg-[hsl(var(--bg-elevated)_/_0.5)]" />
+            <Input type="number" placeholder="50000" className="bg-[hsl(var(--bg-elevated)_/_0.5)] border-[hsl(var(--border))]" />
           </div>
         </div>
 
@@ -214,9 +237,9 @@ function VisitRegistration() {
           <span className="text-xs text-[hsl(var(--text-muted))]">정비 항목</span>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {["엔진오일", "브레이크 패드", "타이어", "배터리", "에어컨 필터", "와이퍼"].map((item) => (
-              <label key={item} className="flex items-center gap-2 p-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--bg-elevated)_/_0.3)] cursor-pointer hover:border-[hsl(var(--primary))] transition-colors">
-                <input type="checkbox" className="rounded border-[hsl(var(--border))]" />
-                <span className="text-sm text-[hsl(var(--text))]">{item}</span>
+              <label key={item} className="flex items-center gap-2 p-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--bg-elevated)_/_0.3)] cursor-pointer hover:border-[hsl(var(--primary))] transition-colors group">
+                <input type="checkbox" className="rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]" />
+                <span className="text-sm text-[hsl(var(--text))] group-hover:text-[hsl(var(--primary))] transition-colors">{item}</span>
               </label>
             ))}
           </div>
@@ -224,10 +247,17 @@ function VisitRegistration() {
 
         <div className="flex flex-col gap-2">
           <span className="text-xs text-[hsl(var(--text-muted))]">정비 메모</span>
-          <Textarea placeholder="특이사항을 입력하세요..." className="bg-[hsl(var(--bg-elevated)_/_0.5)] resize-none" rows={4} />
+          <Textarea placeholder="특이사항을 입력하세요..." className="bg-[hsl(var(--bg-elevated)_/_0.5)] border-[hsl(var(--border))] resize-none focus:ring-[hsl(var(--primary))]" rows={4} />
         </div>
 
-        <Button className="w-full sm:w-auto self-end mt-2">저장하기</Button>
+        <Button 
+          className="w-full sm:w-auto self-end mt-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 shadow-md transition-all gap-2"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? '저장 중...' : '저장하기'}
+        </Button>
       </div>
     </div>
   );
@@ -237,25 +267,25 @@ function SmsHistory() {
   return (
     <div className="flex flex-col gap-3">
       {smsHistory.map((sms) => (
-        <div key={sms.id} className="v0-glass p-4 rounded-xl flex items-center gap-4">
+        <div key={sms.id} className="v0-glass p-4 rounded-xl flex items-center gap-4 hover:bg-[hsl(var(--bg-card))] transition-colors group">
           <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+            "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
             sms.status === "success" ? "bg-emerald-500/15" : "bg-rose-500/15"
           )}>
             {sms.status === "success" ? (
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <CheckCircle className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
             ) : (
-              <XCircle className="w-5 h-5 text-rose-400" />
+              <XCircle className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />
             )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <Badge variant="outline" className="text-[10px] py-0 h-5">{sms.type}</Badge>
+              <Badge variant="outline" className="text-[10px] py-0 h-5 border-[hsl(var(--border))]">{sms.type}</Badge>
               <span className="text-sm font-semibold text-[hsl(var(--text))] truncate">{sms.receiver}</span>
             </div>
             <p className="text-xs text-[hsl(var(--text-muted))] truncate">{sms.content}</p>
           </div>
-          <span className="text-xs text-[hsl(var(--text-muted))] whitespace-nowrap">{sms.date}</span>
+          <span className="text-xs text-[hsl(var(--text-muted))] whitespace-nowrap bg-[hsl(var(--bg-elevated))] px-2 py-1 rounded-md">{sms.date}</span>
         </div>
       ))}
     </div>
@@ -265,73 +295,144 @@ function SmsHistory() {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Rce() {
+  const [vehicles, setVehicles] = useState(initialVehicles);
+  const [sending, setSending] = useState(false);
+
   const urgentCount = vehicles.filter(v => v.rceStatus === "warning").length;
 
+  const handleSendCampaign = () => {
+    setSending(true);
+    toast("캠페인 메시지 발송 스케줄링 중...", { icon: <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--primary))]" /> });
+
+    setTimeout(() => {
+      setSending(false);
+      // Confetti effect
+      const end = Date.now() + 1.5 * 1000;
+      const colors = ['#f59e0b', '#10b981', '#3b82f6'];
+
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+
+      // Display Success Toast
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-bold">✨ 혁신적 성과!</span>
+          <span><b>{urgentCount}명</b>의 타겟 고객에게 맞춤형 캠페인이 발송되었습니다!</span>
+          <span className="text-xs text-[hsl(var(--text-muted))] mt-1">AI 예측 모델이 가장 효과적인 전환 시점을 계산했습니다.</span>
+        </div>,
+        { duration: 5000 }
+      );
+
+      // Dismiss warnings locally for demo effect
+      setVehicles(prev => prev.map(v => 
+        v.rceStatus === "warning" ? { ...v, rceStatus: "active", services: v.services.map(s => ({ ...s, urgent: false })) } : v
+      ));
+
+    }, 2000);
+  };
+
   return (
-    <div className="p-5 lg:p-6 flex flex-col gap-4">
+    <div className="p-5 lg:p-6 flex flex-col gap-4 overflow-y-auto pb-20 h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-[hsl(var(--text))] tracking-tight">RCE · 재방문 유도</h2>
-          <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">차량별 주행거리 기반 정비 알림 자동화</p>
+          <h2 className="text-xl font-bold text-[hsl(var(--text))] tracking-tight">RCE 캠페인 매니저</h2>
+          <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">AI 기반 차량 생애 주기 초맞춤 마케팅 (Revenue Continuity Engine)</p>
         </div>
-        <span className="text-xs bg-amber-500/15 text-amber-400 px-2.5 py-1 rounded-full font-semibold">◆ DEMO</span>
+        <span className="hidden sm:inline-flex text-xs bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-500 px-3 py-1.5 rounded-full font-bold shadow-sm items-center gap-1 border border-amber-500/20">
+          <Zap className="w-3.5 h-3.5" /> PRO
+        </span>
       </div>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="v0-glass rounded-xl p-4 text-center">
+        <div className="v0-glass rounded-xl p-4 text-center group hover:bg-[hsl(var(--bg-card))] transition-colors cursor-default">
           <div className="flex items-center justify-center mb-2">
-            <Car className="w-5 h-5 text-[hsl(var(--primary))]" />
+            <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary))/0.15] flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Car className="w-5 h-5 text-[hsl(var(--primary))]" />
+            </div>
           </div>
           <p className="text-2xl font-bold text-[hsl(var(--text))]">{vehicles.length}</p>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">등록 차량</p>
+          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">관리 중인 차량 (대)</p>
         </div>
-        <div className="v0-glass rounded-xl p-4 text-center">
+        <div className="v0-glass rounded-xl p-4 text-center group hover:bg-[hsl(var(--bg-card))] transition-colors cursor-default relative overflow-hidden">
+          {urgentCount > 0 && <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/20 rounded-bl-full -mr-8 -mt-8 animate-pulse" />}
           <div className="flex items-center justify-center mb-2">
-            <Bell className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Bell className="w-5 h-5 text-amber-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-[hsl(var(--text))]">{urgentCount}</p>
+          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">정비 권장 대상 (대)</p>
+        </div>
+        <div className="v0-glass rounded-xl p-4 text-center group hover:bg-[hsl(var(--bg-card))] transition-colors cursor-default">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Send className="w-5 h-5 text-emerald-400" />
+            </div>
           </div>
           <p className="text-2xl font-bold text-[hsl(var(--text))]">2</p>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">알림 대상</p>
-        </div>
-        <div className="v0-glass rounded-xl p-4 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Send className="w-5 h-5 text-emerald-400" />
-          </div>
-          <p className="text-2xl font-bold text-[hsl(var(--text))]">2</p>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">이번 달 발송</p>
+          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">이번 달 자동 발송 (건)</p>
         </div>
       </div>
 
       {/* Warning Banner */}
       {urgentCount > 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-sm text-amber-400 font-medium">
-              <strong>{urgentCount}대</strong>의 차량이 즉시 교환이 필요한 소모품을 보유 중입니다.
-            </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-5 py-4 rounded-xl bg-gradient-to-r from-amber-500/15 to-amber-600/5 border border-amber-500/30 shadow-[0_0_15px_-3px_rgba(245,158,11,0.2)] animate-in slide-in-from-top-4 fade-in duration-500">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+               <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-[hsl(var(--text))] font-bold">
+                기회 감지: {urgentCount}대의 차량이 즉시 점검 대상입니다.
+              </span>
+              <span className="text-xs text-[hsl(var(--text-muted))] mt-0.5">방치 시 고객 이탈 우려가 있습니다. 선제 권유로 매출을 확보하세요.</span>
+            </div>
           </div>
-          <button className="text-xs text-amber-400 font-semibold hover:underline shrink-0 flex items-center gap-1">
-            <Send className="w-3 h-3" />알림 발송 →
-          </button>
+          <Button 
+            onClick={handleSendCampaign}
+            disabled={sending}
+            className="w-full sm:w-auto shrink-0 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-lg transition-all hover:scale-105 gap-2"
+          >
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {sending ? 'AI 문구 생성 중...' : '원클릭 캠페인 발송'}
+          </Button>
         </div>
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="vehicles" className="flex flex-col gap-4">
-        <TabsList className="w-full sm:w-auto self-start bg-[hsl(var(--bg-elevated))] p-1">
-          <TabsTrigger value="vehicles" className="flex-1 sm:flex-none">☰ 차량 목록</TabsTrigger>
-          <TabsTrigger value="visit" className="flex-1 sm:flex-none">+ 입고 등록</TabsTrigger>
-          <TabsTrigger value="sms" className="flex-1 sm:flex-none">✈ 발송 이력</TabsTrigger>
+      <Tabs defaultValue="vehicles" className="flex flex-col gap-4 mt-2">
+        <TabsList className="w-full sm:w-auto self-start bg-[hsl(var(--bg-glass))] border border-[hsl(var(--border))/0.5] p-1 h-11 shadow-sm">
+          <TabsTrigger value="vehicles" className="flex-1 sm:flex-none text-xs font-semibold data-[state=active]:bg-[hsl(var(--bg))] data-[state=active]:shadow-sm">📋 차량 상태 맵</TabsTrigger>
+          <TabsTrigger value="visit" className="flex-1 sm:flex-none text-xs font-semibold data-[state=active]:bg-[hsl(var(--bg))] data-[state=active]:shadow-sm">✍️ 수기 입고 리포트</TabsTrigger>
+          <TabsTrigger value="sms" className="flex-1 sm:flex-none text-xs font-semibold data-[state=active]:bg-[hsl(var(--bg))] data-[state=active]:shadow-sm">🔔 아웃바운드 이력</TabsTrigger>
         </TabsList>
-        <TabsContent value="vehicles">
-          <VehicleList />
+        <TabsContent value="vehicles" className="focus-visible:outline-none">
+          <VehicleList vehicles={vehicles} />
         </TabsContent>
-        <TabsContent value="visit">
+        <TabsContent value="visit" className="focus-visible:outline-none animate-in fade-in zoom-in-95 duration-200">
           <VisitRegistration />
         </TabsContent>
-        <TabsContent value="sms">
+        <TabsContent value="sms" className="focus-visible:outline-none animate-in fade-in zoom-in-95 duration-200">
           <SmsHistory />
         </TabsContent>
       </Tabs>
