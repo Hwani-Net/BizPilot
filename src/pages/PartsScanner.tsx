@@ -267,13 +267,17 @@ export default function PartsScanner() {
             </div>
 
             {/* Capture Button */}
-            <div className="absolute bottom-36 w-full flex justify-center z-20">
+            <div className="absolute bottom-[18vh] w-full flex justify-center z-20">
               <button 
                 onClick={captureAndAnalyze}
                 disabled={isAnalyzing}
-                className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center bg-white/20 active:bg-white/50 transition"
+                className="w-20 h-20 rounded-full border-[5px] border-white flex items-center justify-center bg-transparent active:bg-white/20 active:scale-95 transition-all"
               >
-                {isAnalyzing ? <Loader2 className="w-8 h-8 animate-spin" /> : <div className="w-16 h-16 bg-white rounded-full"></div>}
+                {isAnalyzing ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                ) : (
+                  <div className="w-14 h-14 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-inner"></div>
+                )}
               </button>
             </div>
 
@@ -490,7 +494,7 @@ export default function PartsScanner() {
       </div>
 
       {error && (
-        <div className="absolute bottom-40 left-4 right-4 bg-red-900/90 text-white p-3 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-bottom-2 z-50">
+        <div className="absolute top-20 left-4 right-4 bg-red-900/90 text-white p-3 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2 z-50">
           <span className="text-sm">{error}</span>
           <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
         </div>
