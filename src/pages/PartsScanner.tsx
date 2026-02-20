@@ -26,6 +26,7 @@ export default function PartsScanner() {
   const [result, setResult] = useState<{ parts: Part[], analysis?: any } | null>(null);
   const [vinResult, setVinResult] = useState<{ car_info: { make: string; model: string; year: string; full_name: string }; compatible_parts: Part[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsTap, setNeedsTap] = useState(false);
 
   // Camera Setup
   useEffect(() => {
@@ -69,8 +70,11 @@ export default function PartsScanner() {
                   if (video.style) video.style.transform = 'scale(1)';
                 }, 50);
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error('Autoplay prevented:', err);
+              if (err?.name === 'NotAllowedError' || err?.message?.includes('allowed')) {
+                setNeedsTap(true);
+              }
             }
           };
 
@@ -250,20 +254,20 @@ export default function PartsScanner() {
             <canvas ref={canvasRef} className="hidden" />
             
             {/* Overlay UI */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center -translate-y-10">
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center -translate-y-20">
               <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative">
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500"></div>
                 <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500"></div>
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500"></div>
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500"></div>
               </div>
-              <p className="absolute -bottom-12 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full">
+              <p className="absolute -bottom-16 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full">
                 부품을 사각형 안에 맞춰주세요
               </p>
             </div>
 
             {/* Capture Button */}
-            <div className="absolute bottom-28 w-full flex justify-center z-20">
+            <div className="absolute bottom-36 w-full flex justify-center z-20">
               <button 
                 onClick={captureAndAnalyze}
                 disabled={isAnalyzing}
@@ -272,6 +276,23 @@ export default function PartsScanner() {
                 {isAnalyzing ? <Loader2 className="w-8 h-8 animate-spin" /> : <div className="w-16 h-16 bg-white rounded-full"></div>}
               </button>
             </div>
+
+            {/* Tap to Start Overlay (for strict mobile autoplay block) */}
+            {needsTap && (
+              <div 
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={() => {
+                  videoRef.current?.play().catch(() => {});
+                  setNeedsTap(false);
+                }}
+              >
+                <Camera className="w-16 h-16 text-blue-400 mb-4 animate-bounce" />
+                <p className="text-xl font-bold text-white mb-2">화면을 터치해주세요</p>
+                <p className="text-sm text-gray-400 text-center px-6">
+                  브라우저 정책에 의해 카메라 화면을<br/>표시하려면 터치가 필요합니다.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
