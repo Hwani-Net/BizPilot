@@ -46,6 +46,9 @@ export default function PartsScanner() {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(e => console.error("Video play failed:", e));
+        };
       }
     } catch (err) {
       console.error('Camera Error:', err);
@@ -196,6 +199,7 @@ export default function PartsScanner() {
               ref={videoRef} 
               autoPlay 
               playsInline 
+              muted
               className="w-full h-full object-cover"
             />
             <canvas ref={canvasRef} className="hidden" />
