@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Phone, Bot, User, Sparkles, TrendingUp, FileText, CalendarPlus, Car, Calendar, Wrench, DollarSign, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { transcriptMessages, copilotSuggestions, callerInfo, formatWon } from "@/lib/mock-data";
+import { transcriptMessages, callerInfo, formatWon } from "@/lib/mock-data";
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
 
 // ─── Waveform Animation ─────────────────────────────────────────────────────
 
@@ -39,28 +41,14 @@ const stateConfig: Record<AgentState, { label: string; color: string; ringColor:
   processing: { label: "처리중", color: "bg-rose-500", ringColor: "bg-rose-500/30", bgColor: "bg-rose-500/10", pulseColor: "bg-rose-500" },
 };
 
-function AgentStatus({ isActive, setIsActive, state, setState }: any) {
-  const config = stateConfig[state as AgentState];
-
-  const handleToggle = () => {
-    if (isActive) {
-      setIsActive(false);
-      setState("idle");
-    } else {
-      // Unlock audio for browsers that block autoplay without user gesture
-      try {
-        const unlock = new Audio('/audio/msg_1.mp3');
-        unlock.volume = 0;
-        unlock.play().then(() => {
-          unlock.pause();
-          unlock.currentTime = 0;
-        }).catch(() => {});
-      } catch (e) {}
-
-      setIsActive(true);
-      setState("listening");
-    }
-  };
+function AgentStatus({ isActive, onStart, onEnd, state, setState }: {
+  isActive: boolean;
+  onStart: () => void;
+  onEnd: () => void;
+  state: AgentState;
+  setState: (s: AgentState) => void;
+}) {
+  const config = stateConfig[state];
 
   const cycleState = () => {
     if (!isActive) return;
@@ -72,9 +60,7 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
   // Simulate state changes for demo
   useEffect(() => {
     if (!isActive) return;
-    const interval = setInterval(() => {
-      cycleState();
-    }, 4000);
+    const interval = setInterval(cycleState, 4000);
     return () => clearInterval(interval);
   }, [isActive, state]);
 
@@ -131,13 +117,23 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
             }
           </p>
           <div className="flex gap-2">
-            <Button
-              onClick={handleToggle}
-              className={cn("gap-2 shadow-sm transition-all text-white", isActive ? "bg-rose-500 hover:bg-rose-600" : "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90")}
-            >
-              {isActive ? <Phone className="w-4 h-4 rotate-[135deg]" /> : <Phone className="w-4 h-4" />}
-              {isActive ? "시뮬레이션 종료" : "시뮬레이션 시작"}
-            </Button>
+            {!isActive ? (
+              <Button
+                onClick={onStart}
+                className="gap-2 shadow-sm text-white bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90"
+              >
+                <Phone className="w-4 h-4" />
+                시뮬레이션 시작
+              </Button>
+            ) : (
+              <Button
+                onClick={onEnd}
+                className="gap-2 shadow-sm text-white bg-rose-500 hover:bg-rose-600"
+              >
+                <Phone className="w-4 h-4 rotate-[135deg]" />
+                시뮬레이션 종료
+              </Button>
+            )}
           </div>
         </div>
 
@@ -155,7 +151,15 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
 
 // ─── Transcript Component ───────────────────────────────────────────────────
 
-function Transcript({ isActive, onComplete }: { isActive: boolean; onComplete?: () => void }) {
+function Transcript({
+  isActive,
+  onComplete,
+  onMessageShown,
+}: {
+  isActive: boolean;
+  onComplete?: () => void;
+  onMessageShown?: (count: number) => void;
+}) {
   const [visibleCount, setVisibleCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -174,28 +178,34 @@ function Transcript({ isActive, onComplete }: { isActive: boolean; onComplete?: 
         onComplete?.();
         return;
       }
-      
-      setVisibleCount(index + 1);
-      
+
+      const newCount = index + 1;
+      setVisibleCount(newCount);
+      onMessageShown?.(newCount);
+
       const msg = transcriptMessages[index];
       currentAudio = new Audio(`/audio/msg_${msg.id}.mp3`);
-      
-      // Ensure loud volume
       currentAudio.volume = 1.0;
-      
+
       currentAudio.onended = () => {
         if (!isCancelled) {
           setTimeout(() => playStep(index + 1), 500);
         }
       };
-      
-      currentAudio.play().catch((e) => {
-        console.warn('Audio playback restricted/failed:', e);
+
+      currentAudio.play().catch(() => {
         if (!isCancelled) {
           setTimeout(() => playStep(index + 1), 2500);
         }
       });
     };
+
+    // Unlock audio before playing
+    try {
+      const unlock = new Audio('/audio/msg_1.mp3');
+      unlock.volume = 0;
+      unlock.play().then(() => { unlock.pause(); unlock.currentTime = 0; }).catch(() => {});
+    } catch (e) {}
 
     setTimeout(() => {
       if (!isCancelled) playStep(0);
@@ -294,48 +304,140 @@ function Transcript({ isActive, onComplete }: { isActive: boolean; onComplete?: 
   );
 }
 
-// ─── Copilot Sidebar Component ──────────────────────────────────────────────
+// ─── Real-Time Copilot Sidebar ───────────────────────────────────────────────
 
-const typeConfig = {
-  upsell: { icon: TrendingUp, color: "text-[hsl(var(--accent))]", bg: "bg-[hsl(var(--accent))/0.1]", border: "border-[hsl(var(--accent))/0.2]", label: "업셀" },
-  script: { icon: FileText, color: "text-[hsl(var(--primary))]", bg: "bg-[hsl(var(--primary))/0.1]", border: "border-[hsl(var(--primary))/0.2]", label: "스크립트" },
-  booking: { icon: CalendarPlus, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20", label: "예약" },
+const typeIcons = {
+  upsell: TrendingUp,
+  script: FileText,
+  booking: CalendarPlus,
+};
+const typeColors = {
+  upsell: { color: "text-[hsl(var(--accent))]", bg: "bg-[hsl(var(--accent))/0.1]", border: "border-[hsl(var(--accent))/0.2]", label: "업셀" },
+  script: { color: "text-[hsl(var(--primary))]", bg: "bg-[hsl(var(--primary))/0.1]", border: "border-[hsl(var(--primary))/0.2]", label: "스크립트" },
+  booking: { color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20", label: "예약" },
 };
 
-function CopilotSidebar() {
+interface CopilotSugg {
+  id: number;
+  type: 'upsell' | 'script' | 'booking';
+  text: string;
+}
+
+function CopilotSidebar({ isActive, callId, messageCount }: {
+  isActive: boolean;
+  callId: string | null;
+  messageCount: number;
+}) {
+  const [suggestions, setSuggestions] = useState<CopilotSugg[]>([]);
+  const [loading, setLoading] = useState(false);
+  const prevCountRef = useRef(0);
+
+  useEffect(() => {
+    if (!isActive || !callId) {
+      setSuggestions([]);
+      prevCountRef.current = 0;
+      return;
+    }
+
+    // Only refresh every 2 messages shown
+    if (messageCount < 2 || messageCount === prevCountRef.current || messageCount % 2 !== 0) return;
+    prevCountRef.current = messageCount;
+
+    setLoading(true);
+    const transcriptSoFar = transcriptMessages.slice(0, messageCount).map(m => ({
+      role: m.role === 'agent' ? 'agent' : 'caller',
+      text: m.text,
+    }));
+
+    fetch(`${SERVER_URL}/api/calls/${callId}/copilot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: transcriptSoFar }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        // Server returns { suggestions: string[] }, map to our format
+        const raw: string[] = data.suggestions ?? [];
+        const types: Array<'upsell' | 'script' | 'booking'> = ['upsell', 'script', 'booking'];
+        const mapped: CopilotSugg[] = raw.slice(0, 4).map((text, i) => ({
+          id: i,
+          type: types[i % 3],
+          text,
+        }));
+        setSuggestions(mapped);
+      })
+      .catch(() => {
+        // Fallback suggestions based on visible transcript context
+        const msgs = transcriptMessages.slice(0, messageCount);
+        const hasPrice = msgs.some(m => m.text.includes('얼마') || m.text.includes('원'));
+        const hasBooking = msgs.some(m => m.text.includes('예약') || m.text.includes('확정'));
+        setSuggestions(hasBooking ? [
+          { id: 0, type: 'booking', text: '오후 2시 슬롯 예약 확정 가능 → 원클릭 예약 버튼 누르세요.' },
+          { id: 1, type: 'upsell', text: '소나타 DN8 타이어 마모도 점검 12개월 초과. 패드 교환 시 함께 제안.' },
+          { id: 2, type: 'script', text: 'RCE 재방문 고객 — 10% 할인 쿠폰 적용 가능.' },
+        ] : hasPrice ? [
+          { id: 0, type: 'upsell', text: '앞뒤 패드 풀세트 + 공임 포함 견적: ₩162,000 (10% RCE 할인 적용).' },
+          { id: 1, type: 'script', text: 'SMS로 상세 견적서 발송 제안하세요.' },
+          { id: 2, type: 'booking', text: '오늘 예약 시 당일 입고 가능 — 빠른 확정 유도.' },
+        ] : [
+          { id: 0, type: 'upsell', text: '브레이크 패드 교환 — 앞뒤 세트 할인 안내 기회.' },
+          { id: 1, type: 'script', text: '"어제 문자 받으셨나요?" 로 RCE 재방문 확인.' },
+          { id: 2, type: 'booking', text: '오늘 오후 슬롯 여유 있음 — 예약 유도하세요.' },
+        ]);
+      })
+      .finally(() => setLoading(false));
+  }, [isActive, callId, messageCount]);
+
   return (
     <div className="v0-glass rounded-xl p-5 h-full">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-[hsl(var(--primary))/0.15] flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-[hsl(var(--primary))]" />
+          <Sparkles className={cn("w-4 h-4 text-[hsl(var(--primary))]", loading && "animate-spin")} />
         </div>
         <div>
           <h3 className="text-base font-semibold text-[hsl(var(--text))]">AI 코파일럿</h3>
-          <p className="text-sm text-[hsl(var(--text-muted))]">실시간 제안</p>
+          <p className="text-sm text-[hsl(var(--text-muted))]">
+            {isActive ? (loading ? "분석 중..." : "실시간 제안") : "통화 시작 후 활성화"}
+          </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        {copilotSuggestions.map((suggestion) => {
-          const config = typeConfig[suggestion.type];
-          return (
-            <button
-              key={suggestion.id}
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border text-left transition-all hover:scale-[1.01] cursor-pointer bg-transparent",
-                config.bg,
-                config.border
-              )}
-            >
-              <config.icon className={cn("w-4 h-4 mt-0.5 shrink-0", config.color)} />
-              <div className="flex-1">
-                <span className={cn("text-xs font-semibold uppercase", config.color)}>{config.label}</span>
-                <p className="text-sm text-[hsl(var(--text))/0.8] mt-0.5 leading-relaxed">{suggestion.text}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {!isActive ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-[hsl(var(--bg-elevated))] flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-[hsl(var(--text-muted))]" />
+          </div>
+          <p className="text-sm text-[hsl(var(--text-muted))]">시뮬레이션을 시작하면<br />AI가 실시간으로 제안합니다</p>
+        </div>
+      ) : suggestions.length === 0 && !loading ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+          <div className="w-2 h-2 bg-[hsl(var(--accent))] rounded-full animate-pulse" />
+          <p className="text-sm text-[hsl(var(--text-muted))]">대화 내용을 분석하고 있습니다...</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {suggestions.map((suggestion) => {
+            const cfg = typeColors[suggestion.type];
+            const Icon = typeIcons[suggestion.type];
+            return (
+              <button
+                key={suggestion.id}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-lg border text-left transition-all hover:scale-[1.01] cursor-pointer bg-transparent animate-in fade-in slide-in-from-left-2 duration-300",
+                  cfg.bg, cfg.border
+                )}
+              >
+                <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", cfg.color)} />
+                <div className="flex-1">
+                  <span className={cn("text-xs font-semibold uppercase", cfg.color)}>{cfg.label}</span>
+                  <p className="text-sm text-[hsl(var(--text))/0.8] mt-0.5 leading-relaxed">{suggestion.text}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -399,36 +501,38 @@ const sentimentConfig = {
   negative: { label: '부정적', color: 'text-rose-400', bg: 'bg-rose-500/15' },
 };
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
-
-function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; onBookingCreated?: () => void }) {
+function CallSummaryCard({ callId, onBookingCreated }: { callId: string; onBookingCreated?: () => void }) {
   const [summaryData, setSummaryData] = useState<CallSummaryData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
 
   useEffect(() => {
-    if (!callId) { setSummaryData(null); setBooked(false); return; }
     setLoading(true);
     setBooked(false);
+    // Send the real transcript for GPT-4o-mini analysis
+    const transcript = transcriptMessages.map(m => ({
+      role: m.role === 'agent' ? 'agent' : 'caller',
+      text: m.text,
+    }));
+
     fetch(`${SERVER_URL}/api/calls/${callId}/summary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript: [] }),
+      body: JSON.stringify({ transcript }),
     })
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setSummaryData(data); })
       .catch(() => {
-        // Mock fallback if server unreachable
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        // Mock fallback — still realistic for demo
         setSummaryData({
-          customerName: '김민수',
-          customerPhone: '010-1234-5678',
-          vehicleModel: '그랜저 IG (2020)',
-          serviceType: '엔진오일 교체 + 브레이크 패드',
-          preferredDate: tomorrow,
+          customerName: callerInfo.name,
+          customerPhone: callerInfo.phone,
+          vehicleModel: callerInfo.vehicle,
+          serviceType: '브레이크 패드 교환 (앞뒤) — RCE 할인 10% 적용',
+          preferredDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
           preferredTime: '14:00',
-          summary: '고객이 내일 오후 2시에 엔진오일 교체와 브레이크 패드 교체를 요청하였습니다.',
+          summary: '박지현 고객이 어제 발송한 RCE SMS를 보고 브레이크 패드 교환 예약 요청. 소나타 DN8 앞뒤 패드 세트 ₩162,000 확정 및 예약 완료.',
           sentiment: 'positive',
         });
       })
@@ -436,7 +540,7 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; 
   }, [callId]);
 
   const handleBook = async () => {
-    if (!callId || !summaryData) return;
+    if (!summaryData) return;
     setBooking(true);
     try {
       const res = await fetch(`${SERVER_URL}/api/calls/${callId}/book`, {
@@ -447,34 +551,36 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; 
       if (res.ok) {
         setBooked(true);
         onBookingCreated?.();
-        // Confetti for delight
+        const { default: confetti } = await import('canvas-confetti');
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+      } else {
+        // Demo: still show booked
+        setBooked(true);
         const { default: confetti } = await import('canvas-confetti');
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
       }
     } catch {
-      // Still mark booked for demo
       setBooked(true);
+      const { default: confetti } = await import('canvas-confetti');
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
     } finally {
       setBooking(false);
     }
   };
 
-  if (!callId || loading) {
-    if (loading) return (
-      <div className="v0-glass rounded-xl p-6 animate-pulse">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary))/0.2] flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-[hsl(var(--primary))] animate-spin" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-[hsl(var(--text))]">AI가 통화 내용을 분석하고 있습니다...</p>
-            <p className="text-sm text-[hsl(var(--text-muted))]">요약, 감정 분석, 예약 정보 추출 중</p>
-          </div>
+  if (loading) return (
+    <div className="v0-glass rounded-xl p-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary))/0.2] flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-[hsl(var(--primary))] animate-spin" />
+        </div>
+        <div>
+          <p className="text-base font-semibold text-[hsl(var(--text))]">AI가 통화 내용을 분석하고 있습니다...</p>
+          <p className="text-sm text-[hsl(var(--text-muted))]">요약, 감정 분석, 예약 정보 추출 중</p>
         </div>
       </div>
-    );
-    return null;
-  }
+    </div>
+  );
 
   if (!summaryData) return null;
 
@@ -492,7 +598,7 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; 
             </div>
             <div>
               <h3 className="text-base font-bold text-[hsl(var(--text))]">AI 통화 요약</h3>
-              <p className="text-sm text-[hsl(var(--text-muted))]">GPT-4o 기반 자동 분석 완료</p>
+              <p className="text-sm text-[hsl(var(--text-muted))]">GPT-4o-mini 기반 자동 분석 완료</p>
             </div>
           </div>
           <span className={cn("text-sm px-2.5 py-1 rounded-full font-semibold", sConf.bg, sConf.color)}>
@@ -553,21 +659,30 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function Calls() {
-  const [state, setState] = useState<AgentState>("listening");
+  const [state, setState] = useState<AgentState>("idle");
   const [isActive, setIsActive] = useState(false);
-  const [endedCallId, setEndedCallId] = useState<string | null>(null);
-  const [mockCallId] = useState(`mock-${Date.now()}`);
+  const [callEnded, setCallEnded] = useState(false);  // Separate: stays true after call
+  const [callId] = useState(`mock-${Date.now()}`);
+  const [messageCount, setMessageCount] = useState(0);
 
-  // When call ends, trigger AI summary
-  const handleSetActive = (active: boolean) => {
-    if (!active && isActive) {
-      // Call just ended — show summary
-      setEndedCallId(mockCallId);
+  const handleStart = () => {
+    setIsActive(true);
+    setCallEnded(false);
+    setMessageCount(0);
+    setState("listening");
+  };
+
+  const handleEnd = () => {
+    setIsActive(false);
+    setState("idle");
+    if (!callEnded) {
+      setCallEnded(true);
     }
-    if (active) {
-      setEndedCallId(null);
-    }
-    setIsActive(active);
+  };
+
+  const handleTranscriptComplete = () => {
+    // Called when all audio finishes naturally
+    handleEnd();
   };
 
   return (
@@ -579,17 +694,28 @@ export default function Calls() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 flex flex-col gap-5">
-          <AgentStatus isActive={isActive} setIsActive={handleSetActive} state={state} setState={setState} />
-          <Transcript isActive={isActive} onComplete={() => {
-            handleSetActive(false);
-            setState("idle");
-          }} />
-          {/* AI Summary Card — appears after call ends */}
-          {endedCallId && <CallSummaryCard callId={endedCallId} />}
+          <AgentStatus
+            isActive={isActive}
+            onStart={handleStart}
+            onEnd={handleEnd}
+            state={state}
+            setState={setState}
+          />
+          <Transcript
+            isActive={isActive}
+            onComplete={handleTranscriptComplete}
+            onMessageShown={setMessageCount}
+          />
+          {/* AI Summary Card — persists after call ends */}
+          {callEnded && <CallSummaryCard callId={callId} />}
         </div>
         <div className="flex flex-col gap-5 sticky top-6">
           <CallerInfo />
-          <CopilotSidebar />
+          <CopilotSidebar
+            isActive={isActive}
+            callId={isActive ? callId : null}
+            messageCount={messageCount}
+          />
         </div>
       </div>
     </div>
