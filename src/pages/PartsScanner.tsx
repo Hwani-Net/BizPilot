@@ -253,32 +253,38 @@ export default function PartsScanner() {
             />
             <canvas ref={canvasRef} className="hidden" />
             
-            {/* Overlay UI */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center -translate-y-20">
-              <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative">
+            {/* Overlay: flex layout for equal spacing between frame & bottom nav */}
+            <div className="absolute inset-0 flex flex-col items-center z-10 pb-16">
+              {/* Top spacer — pushes frame toward vertical center */}
+              <div className="flex-[1.2]" />
+
+              {/* Scan frame */}
+              <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative shrink-0 pointer-events-none">
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500"></div>
                 <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500"></div>
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500"></div>
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500"></div>
               </div>
-              <p className="absolute -bottom-16 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full">
+
+              {/* Helper text */}
+              <p className="mt-3 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full pointer-events-none">
                 부품을 사각형 안에 맞춰주세요
               </p>
-            </div>
 
-            {/* Capture Button */}
-            <div className="absolute bottom-[18vh] w-full flex justify-center z-20">
-              <button 
-                onClick={captureAndAnalyze}
-                disabled={isAnalyzing}
-                className="w-20 h-20 rounded-full border-[5px] border-white flex items-center justify-center bg-transparent active:bg-white/20 active:scale-95 transition-all"
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-                ) : (
-                  <div className="w-14 h-14 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-inner"></div>
-                )}
-              </button>
+              {/* Bottom spacer — button sits in the center of this space */}
+              <div className="flex-1 flex items-center justify-center">
+                <button 
+                  onClick={captureAndAnalyze}
+                  disabled={isAnalyzing}
+                  className="w-20 h-20 rounded-full border-[5px] border-white flex items-center justify-center bg-transparent active:bg-white/20 active:scale-95 transition-all"
+                >
+                  {isAnalyzing ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                  ) : (
+                    <div className="w-14 h-14 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-inner"></div>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Tap to Start Overlay (for strict mobile autoplay block) */}
