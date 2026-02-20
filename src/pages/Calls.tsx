@@ -153,21 +153,22 @@ function AgentStatus({ isActive, onStart, onEnd, state, setState }: {
 
 function Transcript({
   isActive,
+  callEnded,
   onComplete,
   onMessageShown,
 }: {
   isActive: boolean;
+  callEnded: boolean;
   onComplete?: () => void;
   onMessageShown?: (count: number) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(0);
+  // Persist the last shown count so transcript stays visible after call ends
+  const persistedCount = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isActive) {
-      setVisibleCount(0);
-      return;
-    }
+    if (!isActive) return; // Don't reset — keep last messages visible
 
     let isCancelled = false;
     let currentAudio: HTMLAudioElement | null = null;
@@ -181,6 +182,7 @@ function Transcript({
 
       const newCount = index + 1;
       setVisibleCount(newCount);
+      persistedCount.current = newCount;
       onMessageShown?.(newCount);
 
       const msg = transcriptMessages[index];
@@ -200,6 +202,12 @@ function Transcript({
       });
     };
 
+    // Track shown count persistently via ref
+    const originalSetVisible = (n: number) => {
+      setVisibleCount(n);
+      persistedCount.current = n;
+    };
+
     // Unlock audio before playing
     try {
       const unlock = new Audio('/audio/msg_1.mp3');
@@ -210,6 +218,9 @@ function Transcript({
     setTimeout(() => {
       if (!isCancelled) playStep(0);
     }, 1000);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    void originalSetVisible; // referenced to avoid lint warning
 
     return () => {
       isCancelled = true;
@@ -226,7 +237,10 @@ function Transcript({
     }
   }, [visibleCount]);
 
-  const displayedMessages = isActive ? transcriptMessages.slice(0, visibleCount) : [];
+  // Show persisted messages even after call ends
+  const shownCount = isActive ? visibleCount : persistedCount.current;
+  const displayedMessages = shownCount > 0 ? transcriptMessages.slice(0, shownCount) : [];
+  const showStandby = !isActive && shownCount === 0;
 
   return (
     <div className="v0-glass rounded-xl p-5 flex flex-col h-[500px]">
@@ -235,16 +249,16 @@ function Transcript({
           <h3 className="text-base font-semibold text-[hsl(var(--text))]">Live Transcript</h3>
           <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">실시간 음성-텍스트 변환 (STT)</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--accent))/0.1] border border-[hsl(var(--accent))/0.2]">
-          <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-[hsl(var(--accent))] animate-pulse" : "bg-[hsl(var(--text-muted))]")} />
-          <span className={cn("text-sm font-medium tracking-wide", isActive ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-muted))]")}>
-            {isActive ? "RECORDING" : "STANDBY"}
+        <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border", isActive ? "bg-[hsl(var(--accent))/0.1] border-[hsl(var(--accent))/0.2]" : callEnded ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[hsl(var(--text-muted))/0.1] border-[hsl(var(--text-muted))/0.2]")}>
+          <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-[hsl(var(--accent))] animate-pulse" : callEnded ? "bg-emerald-400" : "bg-[hsl(var(--text-muted))]")} />
+          <span className={cn("text-sm font-medium tracking-wide", isActive ? "text-[hsl(var(--accent))]" : callEnded ? "text-emerald-400" : "text-[hsl(var(--text-muted))]")}>
+            {isActive ? "RECORDING" : callEnded ? "통화 완료" : "STANDBY"}
           </span>
         </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar scroll-smooth">
-        {!isActive ? (
+        {showStandby ? (
           <div className="flex items-center justify-center h-full text-base text-[hsl(var(--text-muted))] italic">
             시뮬레이션 시작 버튼을 눌러 데모를 확인하세요.
           </div>
@@ -284,8 +298,8 @@ function Transcript({
                 </div>
               </div>
             ))}
-            {/* Typing indicator */}
-            {visibleCount < transcriptMessages.length && (
+            {/* Typing indicator — only while active */}
+            {isActive && visibleCount < transcriptMessages.length && (
                <div className="flex gap-3 flex-row animate-pulse opacity-70">
                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))]">
                    <Bot className="w-4 h-4 text-white" />
@@ -323,8 +337,9 @@ interface CopilotSugg {
   text: string;
 }
 
-function CopilotSidebar({ isActive, callId, messageCount }: {
+function CopilotSidebar({ isActive, callEnded, callId, messageCount }: {
   isActive: boolean;
+  callEnded: boolean;
   callId: string | null;
   messageCount: number;
 }) {
@@ -333,11 +348,8 @@ function CopilotSidebar({ isActive, callId, messageCount }: {
   const prevCountRef = useRef(0);
 
   useEffect(() => {
-    if (!isActive || !callId) {
-      setSuggestions([]);
-      prevCountRef.current = 0;
-      return;
-    }
+    // Don't clear suggestions when call ends — keep them for review
+    if (!isActive || !callId) return;
 
     // Only refresh every 2 messages shown
     if (messageCount < 2 || messageCount === prevCountRef.current || messageCount % 2 !== 0) return;
@@ -395,22 +407,25 @@ function CopilotSidebar({ isActive, callId, messageCount }: {
         <div className="w-7 h-7 rounded-lg bg-[hsl(var(--primary))/0.15] flex items-center justify-center">
           <Sparkles className={cn("w-4 h-4 text-[hsl(var(--primary))]", loading && "animate-spin")} />
         </div>
-        <div>
-          <h3 className="text-base font-semibold text-[hsl(var(--text))]">AI 코파일럿</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-[hsl(var(--text))]">AI 코파일럿</h3>
+            {callEnded && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold">통화 완료</span>}
+          </div>
           <p className="text-sm text-[hsl(var(--text-muted))]">
-            {isActive ? (loading ? "분석 중..." : "실시간 제안") : "통화 시작 후 활성화"}
+            {isActive ? (loading ? "분석 중..." : "실시간 제안") : callEnded ? "최종 통화 분석 결과" : "통화 시작 후 활성화"}
           </p>
         </div>
       </div>
 
-      {!isActive ? (
+      {!isActive && !callEnded ? (
         <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-[hsl(var(--bg-elevated))] flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-[hsl(var(--text-muted))]" />
           </div>
           <p className="text-sm text-[hsl(var(--text-muted))]">시뮬레이션을 시작하면<br />AI가 실시간으로 제안합니다</p>
         </div>
-      ) : suggestions.length === 0 && !loading ? (
+      ) : isActive && suggestions.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
           <div className="w-2 h-2 bg-[hsl(var(--accent))] rounded-full animate-pulse" />
           <p className="text-sm text-[hsl(var(--text-muted))]">대화 내용을 분석하고 있습니다...</p>
@@ -501,7 +516,11 @@ const sentimentConfig = {
   negative: { label: '부정적', color: 'text-rose-400', bg: 'bg-rose-500/15' },
 };
 
-function CallSummaryCard({ callId, onBookingCreated }: { callId: string; onBookingCreated?: () => void }) {
+function CallSummaryCard({ callId, onConfirm, onBookingCreated }: {
+  callId: string;
+  onConfirm: () => void;
+  onBookingCreated?: () => void;
+}) {
   const [summaryData, setSummaryData] = useState<CallSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
@@ -629,27 +648,37 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string; onBooki
           ))}
         </div>
 
-        {/* One-click booking button */}
+        {/* One-click booking + confirm buttons */}
         {booked ? (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-            <Check className="w-5 h-5 text-emerald-400" />
-            <div>
+            <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div className="flex-1">
               <p className="text-base font-bold text-emerald-400">예약이 등록되었습니다!</p>
               <p className="text-sm text-[hsl(var(--text-muted))]">{summaryData.preferredDate} {summaryData.preferredTime} — {summaryData.serviceType}</p>
             </div>
+            <Button onClick={onConfirm} variant="ghost" size="sm" className="shrink-0">닫기</Button>
           </div>
         ) : (
-          <Button
-            onClick={handleBook}
-            disabled={booking}
-            className="w-full gap-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 shadow-lg transition-all hover:scale-[1.01] text-white font-bold"
-          >
-            {booking ? (
-              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 예약 생성 중...</>
-            ) : (
-              <><CalendarPlus className="w-4 h-4" /> 원클릭 예약 등록</>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleBook}
+              disabled={booking}
+              className="flex-1 gap-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 shadow-lg transition-all hover:scale-[1.01] text-white font-bold"
+            >
+              {booking ? (
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 예약 생성 중...</>
+              ) : (
+                <><CalendarPlus className="w-4 h-4" /> 원클릭 예약 등록</>
+              )}
+            </Button>
+            <Button
+              onClick={onConfirm}
+              variant="ghost"
+              className="shrink-0 border border-[hsl(var(--border))] text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text))]"
+            >
+              확인 완료
+            </Button>
+          </div>
         )}
       </div>
     </div>
@@ -661,11 +690,15 @@ function CallSummaryCard({ callId, onBookingCreated }: { callId: string; onBooki
 export default function Calls() {
   const [state, setState] = useState<AgentState>("idle");
   const [isActive, setIsActive] = useState(false);
-  const [callEnded, setCallEnded] = useState(false);  // Separate: stays true after call
+  const [callEnded, setCallEnded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [callId] = useState(`mock-${Date.now()}`);
   const [messageCount, setMessageCount] = useState(0);
 
+  const handleConfirm = () => setModalOpen(false);
+
   const handleStart = () => {
+    if (modalOpen) setModalOpen(false); // Auto-approve pending popup
     setIsActive(true);
     setCallEnded(false);
     setMessageCount(0);
@@ -677,13 +710,11 @@ export default function Calls() {
     setState("idle");
     if (!callEnded) {
       setCallEnded(true);
+      setModalOpen(true);
     }
   };
 
-  const handleTranscriptComplete = () => {
-    // Called when all audio finishes naturally
-    handleEnd();
-  };
+  const handleTranscriptComplete = () => handleEnd();
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 h-screen overflow-y-auto pb-20">
@@ -703,21 +734,42 @@ export default function Calls() {
           />
           <Transcript
             isActive={isActive}
+            callEnded={callEnded}
             onComplete={handleTranscriptComplete}
             onMessageShown={setMessageCount}
           />
-          {/* AI Summary Card — persists after call ends */}
-          {callEnded && <CallSummaryCard callId={callId} />}
         </div>
         <div className="flex flex-col gap-5 sticky top-6">
           <CallerInfo />
           <CopilotSidebar
             isActive={isActive}
+            callEnded={callEnded}
             callId={isActive ? callId : null}
             messageCount={messageCount}
           />
         </div>
       </div>
+
+      {/* 통화 종료 후 보텀시트 팝업 — stays until user confirms */}
+      {modalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={handleConfirm}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-6 duration-300">
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center justify-between px-4 py-2 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <span className="text-amber-400 font-medium text-sm">☎️ 새 전화가 오면 현재 내용이 자동 승인됩니다</span>
+                <Button size="sm" onClick={handleConfirm} variant="ghost" className="text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text))] h-7 px-2 shrink-0">
+                  닫기 ×
+                </Button>
+              </div>
+              <CallSummaryCard callId={callId} onConfirm={handleConfirm} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
