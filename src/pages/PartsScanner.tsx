@@ -214,29 +214,32 @@ export default function PartsScanner() {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-gray-900 text-white overflow-hidden">
-      {/* Header Tabs */}
-      <div className="flex justify-around p-4 bg-gray-900 z-10">
+    <div className="absolute inset-0 flex flex-col bg-black text-white overflow-hidden">
+      {/* Premium Glassmorphic Header Tabs */}
+      <div className="flex justify-around p-4 z-20 bg-black/60 backdrop-blur-xl border-b border-white/10">
         <button 
           onClick={() => setMode('camera')}
-          className={`px-4 py-2 ${mode === 'camera' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
+          className={`flex-1 flex flex-col items-center py-2 transition-all duration-300 ${mode === 'camera' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          <Camera className="w-6 h-6 mx-auto mb-1" />
-          <span className="text-xs">AR Scan</span>
+          <Camera className="w-6 h-6 mb-1" />
+          <span className="text-[11px] font-semibold tracking-wider uppercase">AR Scan</span>
+          {mode === 'camera' && <div className="absolute bottom-0 w-12 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
         </button>
         <button 
           onClick={() => setMode('vin')} 
-          className={`px-4 py-2 ${mode === 'vin' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
+          className={`flex-1 flex flex-col items-center py-2 transition-all duration-300 ${mode === 'vin' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          <ScanLine className="w-6 h-6 mx-auto mb-1" />
-          <span className="text-xs">VIN</span>
+          <ScanLine className="w-6 h-6 mb-1" />
+          <span className="text-[11px] font-semibold tracking-wider uppercase">VIN</span>
+          {mode === 'vin' && <div className="absolute bottom-0 w-12 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
         </button>
         <button 
           onClick={() => setMode('search')}
-          className={`px-4 py-2 ${mode === 'search' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
+          className={`flex-1 flex flex-col items-center py-2 transition-all duration-300 ${mode === 'search' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          <Search className="w-6 h-6 mx-auto mb-1" />
-          <span className="text-xs">Search</span>
+          <Search className="w-6 h-6 mb-1" />
+          <span className="text-[11px] font-semibold tracking-wider uppercase">Search</span>
+          {mode === 'search' && <div className="absolute bottom-0 w-12 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
         </button>
       </div>
 
@@ -253,37 +256,53 @@ export default function PartsScanner() {
             />
             <canvas ref={canvasRef} className="hidden" />
             
-            {/* Overlay: Stitch Design Flex Layout */}
+            {/* Premium Overlay: Sci-fi HUD Style */}
             <div className="absolute inset-0 flex flex-col z-10 pb-20">
+              {/* Subtle Scanning Grid/Lines Background Overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+
               {/* Top spacer */}
               <div className="flex-[1] min-h-0" />
 
               {/* Center Frame Container */}
-              <div className="flex flex-col items-center shrink-0">
-                <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative pointer-events-none">
-                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500"></div>
-                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500"></div>
-                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500"></div>
-                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500"></div>
+              <div className="flex flex-col items-center shrink-0 w-full px-8 relative">
+                {/* HUD Viewfinder */}
+                <div className="w-full aspect-square max-w-[320px] rounded-2xl relative pointer-events-none border border-white/10 shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] bg-black/10 backdrop-blur-[2px]">
+                  {/* Neon Cyan Corner Brackets */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-cyan-400 rounded-tl-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-cyan-400 rounded-tr-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-cyan-400 rounded-bl-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-cyan-400 rounded-br-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  
+                  {/* Subtle center crosshair */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                    <div className="w-6 h-px bg-cyan-400"></div>
+                    <div className="absolute h-6 w-px bg-cyan-400"></div>
+                  </div>
                 </div>
                 
-                {/* Helper text */}
-                <p className="mt-4 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full pointer-events-none">
+                {/* Helper text - Glassmorphic Pill */}
+                <p className="mt-6 text-white text-sm font-medium tracking-wide bg-black/40 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full pointer-events-none shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
                   부품을 사각형 안에 맞춰주세요
                 </p>
               </div>
 
-              {/* Bottom container: Perfectly centers the button vertically in the remaining space */}
-              <div className="flex-[1] min-h-0 flex items-center justify-center">
+              {/* Bottom container: Premium glowing capture button */}
+              <div className="flex-[1] min-h-0 flex items-center justify-center relative">
                 <button 
                   onClick={captureAndAnalyze}
                   disabled={isAnalyzing}
-                  className="w-20 h-20 rounded-full border-[5px] border-white flex items-center justify-center bg-transparent active:bg-white/20 active:scale-95 transition-all shadow-lg"
+                  className="relative group w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-50"
+                  aria-label="Capture part"
                 >
+                  {/* Frosted Glass Outer Ring */}
+                  <div className="absolute inset-x-0 inset-y-0 rounded-full border-[3px] border-white/80 bg-white/10 backdrop-blur-xl shadow-[0_0_15px_rgba(255,255,255,0.15)] group-hover:border-white transition-colors duration-300"></div>
+                  
                   {isAnalyzing ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                    <Loader2 className="w-8 h-8 animate-spin text-red-500 relative z-10" />
                   ) : (
-                    <div className="w-14 h-14 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-inner"></div>
+                    /* Glowing Inner Ruby */
+                    <div className="w-14 h-14 bg-red-600 rounded-full relative z-10 transition-all duration-300 group-hover:bg-red-500 group-active:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.8)] inset-shadow-sm"></div>
                   )}
                 </button>
               </div>
