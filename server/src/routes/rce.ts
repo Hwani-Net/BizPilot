@@ -28,7 +28,7 @@ import { runRceCampaign, sendRceSms } from '../lib/scheduler.js';
 export async function rceRoutes(fastify: FastifyInstance) {
 
   // GET /api/rce/vehicles
-  fastify.get('/api/rce/vehicles', async (_req, reply) => {
+  fastify.get('/vehicles', async (_req, reply) => {
     const vehicles = await listVehicles();
     return reply.send(await Promise.all(vehicles.map(async v => ({
       ...v,
@@ -47,7 +47,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
       regKm?: number;
       currentKm?: number; // odometer reading right now (at first visit)
     };
-  }>('/api/rce/vehicles', async (req, reply) => {
+  }>('/vehicles', async (req, reply) => {
     const { ownerName, ownerPhone, vehicleModel, vehicleType, regYear, regKm, currentKm } = req.body;
 
     if (!ownerName || !ownerPhone || !vehicleModel) {
@@ -72,7 +72,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/rce/vehicles/:phone  — full status including maintenance predictions
-  fastify.get<{ Params: { phone: string } }>('/api/rce/vehicles/:phone', async (req, reply) => {
+  fastify.get<{ Params: { phone: string } }>('/vehicles/:phone', async (req, reply) => {
     const vehicle = await getVehicleByPhone(req.params.phone);
     if (!vehicle) return reply.status(404).send({ error: 'Vehicle not found' });
 
@@ -98,7 +98,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   fastify.post<{
     Params: { phone: string };
     Body: { currentKm: number; services?: string[] }; // services done this visit
-  }>('/api/rce/vehicles/:phone/visit', async (req, reply) => {
+  }>('/vehicles/:phone/visit', async (req, reply) => {
     const vehicle = await getVehicleByPhone(req.params.phone);
     if (!vehicle) return reply.status(404).send({ error: 'Vehicle not found' });
 
@@ -134,7 +134,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   // POST /api/rce/service  — record a completed service item
   fastify.post<{
     Body: { phone: string; itemKey: string; doneAtKm: number };
-  }>('/api/rce/service', async (req, reply) => {
+  }>('/service', async (req, reply) => {
     const { phone, itemKey, doneAtKm } = req.body;
     if (!phone || !itemKey || !doneAtKm) {
       return reply.status(400).send({ error: 'phone, itemKey, doneAtKm required' });
@@ -162,7 +162,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/rce/due  — vehicles due for maintenance notification
-  fastify.get<{ Querystring: { threshold?: string } }>('/api/rce/due', async (req, reply) => {
+  fastify.get<{ Querystring: { threshold?: string } }>('/due', async (req, reply) => {
     const threshold = parseInt(req.query.threshold ?? '1500', 10);
     const targets = await getVehiclesDueForAlert(threshold);
     return reply.send({
@@ -180,13 +180,13 @@ export async function rceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/rce/logs
-  fastify.get<{ Querystring: { limit?: string } }>('/api/rce/logs', async (req, reply) => {
+  fastify.get<{ Querystring: { limit?: string } }>('/logs', async (req, reply) => {
     const limit = parseInt(req.query.limit ?? '50', 10);
     return reply.send(await listRceLogs(limit));
   });
 
   // POST /api/rce/run  — manual campaign trigger
-  fastify.post('/api/rce/run', async (_req, reply) => {
+  fastify.post('/run', async (_req, reply) => {
     // Fire and forget — respond instantly
     runRceCampaign().catch(err => console.error('[RCE] Manual run error:', err));
     return reply.send({ status: 'started', message: 'RCE campaign triggered (mileage-based)' });
@@ -195,7 +195,7 @@ export async function rceRoutes(fastify: FastifyInstance) {
   // POST /api/rce/send  — single immediate SMS
   fastify.post<{
     Body: { phone: string; message: string };
-  }>('/api/rce/send', async (req, reply) => {
+  }>('/send', async (req, reply) => {
     const { phone, message } = req.body;
     if (!phone || !message) return reply.status(400).send({ error: 'phone, message required' });
 

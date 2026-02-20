@@ -21,14 +21,14 @@ export async function accountingRoutes(app: FastifyInstance) {
 
   // ── Ledger ────────────────────────────────────────────────
 
-  app.get('/api/accounting/ledger', async (_req, reply) => {
+  app.get('/ledger', async (_req, reply) => {
     const entries = await listLedgerEntries(100);
     return reply.send(entries);
   });
 
   app.post<{
     Body: Omit<LedgerEntry, 'id' | 'createdAt'>;
-  }>('/api/accounting/ledger', async (req, reply) => {
+  }>('/ledger', async (req, reply) => {
     const { date, description, category, amount, type, receiptId } = req.body;
 
     if (!date || !description || !category || !amount || !type) {
@@ -44,13 +44,13 @@ export async function accountingRoutes(app: FastifyInstance) {
 
   // ── Receipts ──────────────────────────────────────────────
 
-  app.get('/api/accounting/receipts', async (_req, reply) => {
+  app.get('/receipts', async (_req, reply) => {
     const receipts = await listReceipts(50);
     return reply.send(receipts);
   });
 
   app.patch<{ Params: { id: string } }>(
-    '/api/accounting/receipts/:id/verify',
+    '/receipts/:id/verify',
     async (req, reply) => {
       const id = Number(req.params.id);
       if (isNaN(id)) return reply.code(400).send({ error: 'Invalid id' });
@@ -61,7 +61,7 @@ export async function accountingRoutes(app: FastifyInstance) {
 
   // ── Summary ───────────────────────────────────────────────
 
-  app.get('/api/accounting/summary', async (_req, reply) => {
+  app.get('/summary', async (_req, reply) => {
     const summary = await getLedgerSummary();
     return reply.send(summary);
   });

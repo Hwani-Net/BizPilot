@@ -1,12 +1,12 @@
+import { config } from 'dotenv';
+config(); // load server/.env — MUST run before any module reads process.env
+
 import Fastify from 'fastify';
 import FastifyWebSocket from '@fastify/websocket';
 import FastifyCors from '@fastify/cors';
-import { config } from 'dotenv';
 import { initRoutes } from './routes/index.js';
 import { startScheduler } from './lib/scheduler.js';
 import { seedPartsIfEmpty } from './lib/db-supabase.js';
-
-config(); // load server/.env
 
 const PORT = Number(process.env.PORT ?? 3001);
 const HOST = process.env.HOST ?? '0.0.0.0';

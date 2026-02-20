@@ -170,9 +170,9 @@ export function useRce() {
       api<RceLog[]>('/api/rce/logs'),
     ]);
 
-    if (v === null) {
-      // Server offline — use mock data
-      setIsOffline(true);
+    if (v === null || v.length === 0) {
+      // Server offline or empty DB — use mock data for demo presentation
+      setIsOffline(v === null);
       setVehicles(MOCK_VEHICLES);
       setDuelist(MOCK_DUE);
       setLogs(MOCK_LOGS);

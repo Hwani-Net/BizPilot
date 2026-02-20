@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
     "google-maps": {
       "command": "npx",
       "args": [

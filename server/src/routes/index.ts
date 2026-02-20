@@ -7,6 +7,8 @@ import { rceRoutes } from './rce.js';
 import { accountingRoutes } from './accounting.js';
 import { dashboardRoutes } from './dashboard.js';
 import { partsRoutes } from './parts.js';
+import { notificationRoutes } from './notifications.js';
+import { trendRoutes } from './trends.js';
 
 export async function initRoutes(app: FastifyInstance) {
   // Health check/root already handled in index.ts
@@ -29,6 +31,13 @@ export async function initRoutes(app: FastifyInstance) {
 
   // Dashboard Summary
   await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+
   // Parts Scanner (AR/Vision)
   await app.register(partsRoutes, { prefix: '/api/parts' });
+
+  // Notifications Hub
+  await app.register(notificationRoutes, { prefix: '/api/notifications' });
+
+  // Trend Radar (Premium Feature)
+  await app.register(trendRoutes, { prefix: '/api/trends' });
 }

@@ -24,6 +24,13 @@ export interface WeeklyRevenue {
   fullDate: string;
 }
 
+export interface ForecastData {
+  nextWeekRevenue: number;
+  confidence: number;
+  rceExpectedVisits: number;
+  breakdown: { item: string; revenue: number; count: number }[];
+}
+
 // Demo fallback data matching V0 design
 const DEMO_STATS: DashboardStats = {
   todayRevenue: 2_450_000,
@@ -51,6 +58,19 @@ const DEMO_WEEKLY_REVENUE: WeeklyRevenue[] = [
   { day: '일', revenue: 3800000, fullDate: '2026-02-22' },
 ];
 
+const DEMO_FORECAST: ForecastData = {
+  nextWeekRevenue: 2340000,
+  confidence: 82,
+  rceExpectedVisits: 3,
+  breakdown: [
+    { item: '엔진오일 교체', revenue: 960000, count: 8 },
+    { item: '브레이크 패드', revenue: 540000, count: 3 },
+    { item: '타이어 교환', revenue: 480000, count: 2 },
+    { item: '에어필터', revenue: 225000, count: 5 },
+    { item: '냉각수 교체', revenue: 135000, count: 3 },
+  ],
+};
+
 function hasRealData(s: DashboardStats): boolean {
   // Only consider it "real" data if there's actual revenue
   return s.todayRevenue > 0 && s.monthlyRevenue > 0;
@@ -60,6 +80,7 @@ export function useDashboard() {
   const [stats, setStats] = useState<DashboardStats>(DEMO_STATS);
   const [trends, setTrends] = useState<DashboardTrends>(DEMO_TRENDS);
   const [weeklyRevenue, setWeeklyRevenue] = useState<WeeklyRevenue[]>(DEMO_WEEKLY_REVENUE);
+  const [forecast, setForecast] = useState<ForecastData>(DEMO_FORECAST);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
@@ -74,6 +95,7 @@ export function useDashboard() {
           if (data.trends) setTrends(data.trends);
           if (data.weeklyRevenue) setWeeklyRevenue(data.weeklyRevenue);
         }
+        if (data.forecast) setForecast(data.forecast);
       }
       // If fetch fails or returns empty data, DEMO_STATS remain in state
     } catch (err) {
@@ -87,5 +109,5 @@ export function useDashboard() {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, trends, weeklyRevenue, loading, refresh: fetchStats };
+  return { stats, trends, weeklyRevenue, forecast, loading, refresh: fetchStats };
 }

@@ -7,8 +7,20 @@ import { createClient } from '@supabase/supabase-js';
 import { env } from '../config.js';
 import type { CallRecord, TranscriptEntry, Receipt, LedgerEntry } from '../types.js';
 
-// ── Supabase Client ─────────────────────────────────────────
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+// ── Supabase Client (lazy — ensures dotenv has loaded before first use) ──
+let _supabase: ReturnType<typeof createClient> | null = null;
+export function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+  }
+  return _supabase;
+}
+// backward-compat alias
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_target, prop) {
+    return (getSupabase() as any)[prop];
+  },
+});
 
 // ── Constants (re-exported for compatibility) ───────────────
 

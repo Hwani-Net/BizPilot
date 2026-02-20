@@ -10,11 +10,25 @@ import type { FastifyInstance } from 'fastify';
 import OpenAI from 'openai';
 import { env } from '../config.js';
 import type { TranscriptEntry, CallRecord } from '../types.js';
-import { insertCallRecord, listCallRecords, getCallRecord } from '../lib/db-supabase.js';
+import { insertCallRecord, listCallRecords, getCallRecord, createBooking } from '../lib/db-supabase.js';
 import { upsertRceCustomer } from '../lib/db-supabase.js';
 
 // In-memory store for ACTIVE calls only
 const activeCallStore: Map<string, CallRecord> = new Map();
+// In-memory store for call summaries (keyed by call id)
+const callSummaryStore: Map<string, CallSummary> = new Map();
+
+export interface CallSummary {
+  customerName: string;
+  customerPhone: string;
+  vehicleModel: string;
+  serviceType: string;
+  preferredDate: string;
+  preferredTime: string;
+  summary: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  bookingCreated?: boolean;
+}
 
 export async function callsApiRoutes(app: FastifyInstance) {
 
@@ -41,6 +55,131 @@ export async function callsApiRoutes(app: FastifyInstance) {
     const db = await getCallRecord(id);
     if (!db) return reply.code(404).send({ error: 'Call not found' });
     return db;
+  });
+
+  /** POST /api/calls/:id/summary — AI-generate call summary + extract booking info */
+  app.post<{
+    Params: { id: string };
+    Body: { transcript: TranscriptEntry[] };
+  }>('/:id/summary', async (req, reply) => {
+    const { transcript } = req.body;
+    const callId = req.params.id;
+    const active = activeCallStore.get(callId);
+
+    if (!env.OPENAI_API_KEY || env.MOCK_MODE) {
+      // Mock summary for demo
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const mock: CallSummary = {
+        customerName: active?.callerName ?? '김민수',
+        customerPhone: active?.callerPhone ?? '010-1234-5678',
+        vehicleModel: '그랜저 IG (2020)',
+        serviceType: '엔진오일 교체 + 브레이크 패드',
+        preferredDate: tomorrow,
+        preferredTime: '14:00',
+        summary: '고객이 내일 오후 2시에 엔진오일 교체와 브레이크 패드 교체를 요청하였습니다. 차량은 그랜저 IG 2020년식이며, 예약 확정을 희망합니다.',
+        sentiment: 'positive',
+      };
+      callSummaryStore.set(callId, mock);
+      return reply.send(mock);
+    }
+
+    try {
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      const context = (transcript ?? [])
+        .map(t => `${t.role === 'caller' ? '고객' : 'AI 비서'}: ${t.text}`)
+        .join('\n');
+
+      const res = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `당신은 자동차 정비소 AI 비서의 통화 요약 엔진입니다.
+통화 내용을 분석하여 아래 JSON 형식으로 요약하세요:
+{
+  "customerName": "고객 이름 (불명이면 '미확인 고객')",
+  "vehicleModel": "차종 (불명이면 '차종 미확인')",
+  "serviceType": "요청 서비스 (예: 엔진오일 교체, 타이어 교체 등)",
+  "preferredDate": "YYYY-MM-DD (불명이면 내일 날짜)",
+  "preferredTime": "HH:MM (불명이면 '14:00')",
+  "summary": "3줄 이내 한국어 요약",
+  "sentiment": "positive | neutral | negative"
+}`,
+          },
+          { role: 'user', content: context || '고객: 안녕하세요, 내일 오후에 엔진오일 교체 가능한가요?' },
+        ],
+        max_tokens: 300,
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+      });
+
+      const parsed = JSON.parse(res.choices[0]?.message?.content ?? '{}');
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const result: CallSummary = {
+        customerName: parsed.customerName ?? active?.callerName ?? '미확인 고객',
+        customerPhone: active?.callerPhone ?? '010-0000-0000',
+        vehicleModel: parsed.vehicleModel ?? '차종 미확인',
+        serviceType: parsed.serviceType ?? '정비 문의',
+        preferredDate: parsed.preferredDate ?? tomorrow,
+        preferredTime: parsed.preferredTime ?? '14:00',
+        summary: parsed.summary ?? '통화 요약 생성 실패',
+        sentiment: parsed.sentiment ?? 'neutral',
+      };
+      callSummaryStore.set(callId, result);
+      return reply.send(result);
+    } catch (err) {
+      app.log.warn(err, 'Summary generation failed, returning mock');
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const fallback: CallSummary = {
+        customerName: active?.callerName ?? '미확인 고객',
+        customerPhone: active?.callerPhone ?? '010-0000-0000',
+        vehicleModel: '차종 미확인',
+        serviceType: '정비 문의',
+        preferredDate: tomorrow,
+        preferredTime: '14:00',
+        summary: '통화 내용을 기반으로 자동 요약할 수 없었습니다.',
+        sentiment: 'neutral',
+      };
+      callSummaryStore.set(callId, fallback);
+      return reply.send(fallback);
+    }
+  });
+
+  /** POST /api/calls/:id/book — Create booking from call summary */
+  app.post<{
+    Params: { id: string };
+    Body?: Partial<CallSummary>;
+  }>('/:id/book', async (req, reply) => {
+    const callId = req.params.id;
+    const stored = callSummaryStore.get(callId);
+    const summaryData = { ...stored, ...req.body };
+
+    if (!summaryData.customerName || !summaryData.serviceType) {
+      return reply.code(400).send({ error: 'Call summary not found. Generate summary first.' });
+    }
+
+    try {
+      const booking = await createBooking({
+        ownerName: summaryData.customerName,
+        ownerPhone: summaryData.customerPhone ?? '010-0000-0000',
+        vehicleModel: summaryData.vehicleModel,
+        serviceType: summaryData.serviceType,
+        startTime: `${summaryData.preferredDate} ${summaryData.preferredTime}`,
+        status: 'confirmed',
+        notes: `[AI 통화 요약] ${summaryData.summary ?? ''}`,
+      });
+
+      // Mark summary as booked
+      if (stored) {
+        stored.bookingCreated = true;
+        callSummaryStore.set(callId, stored);
+      }
+
+      return reply.send({ ok: true, booking });
+    } catch (err) {
+      app.log.error(err, 'Failed to create booking from call summary');
+      return reply.code(500).send({ error: 'Booking creation failed' });
+    }
   });
 
   /** POST /api/calls/:id/copilot */
@@ -116,7 +255,7 @@ export async function callsApiRoutes(app: FastifyInstance) {
     return reply.send(record);
   });
 
-  /** POST /api/calls/:id/end  — end active call & persist to SQLite */
+  /** POST /api/calls/:id/end  — end active call & persist */
   app.post<{
     Params: { id: string };
     Body?: { summary?: string; callerName?: string };

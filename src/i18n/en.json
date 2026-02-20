@@ -10,6 +10,7 @@
     "accounting": "Ledger",
     "rce": "RCE Engine",
     "scanner": "AR Parts Scan",
+    "trends": "Trend Radar",
     "settings": "Settings"
   },
   "dashboard": {

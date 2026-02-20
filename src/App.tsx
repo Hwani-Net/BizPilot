@@ -9,6 +9,7 @@ import Rce from '@/pages/Rce';
 import NotFound from '@/pages/NotFound';
 import PartsScanner from '@/pages/PartsScanner';
 import VehiclePassport from '@/pages/VehiclePassport';
+import TrendRadar from '@/pages/TrendRadar';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/rce" element={<Rce />} />
           <Route path="/scanner" element={<PartsScanner />} />
+          <Route path="/trends" element={<TrendRadar />} />
           <Route path="/vehicles/:phone" element={<VehiclePassport />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

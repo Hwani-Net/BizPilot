@@ -21,7 +21,7 @@ cat "C:\Users\AIcreator\.agent\LESSONS_LEARNED.md"
 ## 3단계: 현재 프로젝트 상태 확인
 // turbo
 ```
-git log -3 --oneline
+git --no-pager log -3 --oneline
 ```
 
 ## 4단계: 상태 보고

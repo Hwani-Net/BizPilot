@@ -20,3 +20,20 @@ server/data/*.db-wal
 # TypeScript build cache
 tsconfig.app.tsbuildinfo
 server/tsconfig.tsbuildinfo
+
+.vercel
+
+# Local-only scripts / secrets (do NOT commit)
+deploy_render.cjs
+test*.mp3
+transcript*.json
+scripts/
+*.msi
+demo_output_gcp/
+kokoroutput_gcp/
+melo_*.wav
+extract.py
+scrape*.mjs
+generate_tts.mjs
+primer_*.txt
+

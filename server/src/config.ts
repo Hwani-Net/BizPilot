@@ -1,3 +1,11 @@
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Ensure .env is loaded before any process.env access
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, '../.env') });
+
 // Validated, typed environment variables
 export const env = {
   OPENAI_API_KEY: requireEnv('OPENAI_API_KEY'),

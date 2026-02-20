@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Phone, Bot, User, Sparkles, TrendingUp, FileText, CalendarPlus, Car, Calendar, Wrench, DollarSign } from "lucide-react";
+import { Mic, MicOff, Phone, Bot, User, Sparkles, TrendingUp, FileText, CalendarPlus, Car, Calendar, Wrench, DollarSign, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { transcriptMessages, copilotSuggestions, callerInfo, formatWon } from "@/lib/mock-data";
@@ -114,7 +114,7 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
             </div>
             {isActive && <Waveform active={state === 'speaking' || state === 'listening'} color={config.pulseColor} />}
           </div>
-          <p className="text-sm text-[hsl(var(--text-muted))] text-center sm:text-left">
+          <p className="text-base text-[hsl(var(--text-muted))] text-center sm:text-left">
             {isActive
               ? "AI 에이전트가 통화를 처리하고 있습니다. 실시간 대화 내용이 아래에 표시됩니다."
               : "에이전트가 비활성 상태입니다. 시작 버튼을 눌러 전화 수신을 시뮬레이션하세요."
@@ -134,9 +134,9 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
 
         {isActive && (
           <div className="hidden sm:flex flex-col gap-2 text-right">
-            <div className="text-xs text-[hsl(var(--text-muted))] uppercase tracking-wider">Call Duration</div>
+            <div className="text-sm text-[hsl(var(--text-muted))] uppercase tracking-wider">Call Duration</div>
             <div className="text-3xl font-mono font-bold text-[hsl(var(--primary))] tracking-widest">{formatTime(timer)}</div>
-            <div className="text-xs text-[hsl(var(--text-muted))] font-medium">실시간 녹취 분석 중...</div>
+            <div className="text-sm text-[hsl(var(--text-muted))] font-medium">실시간 녹취 분석 중...</div>
           </div>
         )}
       </div>
@@ -155,11 +155,47 @@ function Transcript({ isActive }: { isActive: boolean }) {
       setVisibleCount(0);
       return;
     }
-    // Simulate streaming transcript
-    const interval = setInterval(() => {
-      setVisibleCount(prev => prev < transcriptMessages.length ? prev + 1 : prev);
-    }, 2500); // New message every 2.5s
-    return () => clearInterval(interval);
+
+    let isCancelled = false;
+    let currentAudio: HTMLAudioElement | null = null;
+
+    const playStep = (index: number) => {
+      if (isCancelled || index >= transcriptMessages.length) {
+        // 끝나면 코파일럿 등에 종료 시그널을 줄 수도 있으나 현재는 표시만
+        return;
+      }
+      
+      setVisibleCount(index + 1);
+      
+      const msg = transcriptMessages[index];
+      currentAudio = new Audio(`/audio/msg_${msg.id}.mp3`);
+      
+      currentAudio.onended = () => {
+        if (!isCancelled) {
+          setTimeout(() => playStep(index + 1), 600); // 이전 대사 끝나고 0.6초 뒤 다음 대사
+        }
+      };
+      
+      currentAudio.play().catch((e) => {
+        console.warn('Audio playback restricted by browser autoplay policy:', e);
+        // 오디오 재생 실패시 기본 타이머 폴백
+        if (!isCancelled) {
+          setTimeout(() => playStep(index + 1), 2500);
+        }
+      });
+    };
+
+    // 첫 메시지 시작 전 살짝 딜레이
+    setTimeout(() => {
+      if (!isCancelled) playStep(0);
+    }, 1000);
+
+    return () => {
+      isCancelled = true;
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+    };
   }, [isActive]);
 
   useEffect(() => {
@@ -174,12 +210,12 @@ function Transcript({ isActive }: { isActive: boolean }) {
     <div className="v0-glass rounded-xl p-5 flex flex-col h-[500px]">
       <div className="flex items-center justify-between mb-4 shrink-0 border-b border-[hsl(var(--border))] pb-3">
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--text))]">Live Transcript</h3>
-          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">실시간 음성-텍스트 변환 (STT)</p>
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">Live Transcript</h3>
+          <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">실시간 음성-텍스트 변환 (STT)</p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--accent))/0.1] border border-[hsl(var(--accent))/0.2]">
           <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-[hsl(var(--accent))] animate-pulse" : "bg-[hsl(var(--text-muted))]")} />
-          <span className={cn("text-xs font-medium tracking-wide", isActive ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-muted))]")}>
+          <span className={cn("text-sm font-medium tracking-wide", isActive ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-muted))]")}>
             {isActive ? "RECORDING" : "STANDBY"}
           </span>
         </div>
@@ -187,7 +223,7 @@ function Transcript({ isActive }: { isActive: boolean }) {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar scroll-smooth">
         {!isActive ? (
-          <div className="flex items-center justify-center h-full text-sm text-[hsl(var(--text-muted))] italic">
+          <div className="flex items-center justify-center h-full text-base text-[hsl(var(--text-muted))] italic">
             시뮬레이션 시작 버튼을 눌러 데모를 확인하세요.
           </div>
         ) : (
@@ -216,9 +252,9 @@ function Transcript({ isActive }: { isActive: boolean }) {
                     ? "bg-gradient-to-r from-[hsl(var(--primary))/0.1] to-[hsl(var(--primary))/0.05] border border-[hsl(var(--primary))/0.1] rounded-tl-sm text-[hsl(var(--text))]"
                     : "bg-[hsl(var(--bg-elevated))] border border-[hsl(var(--border))] rounded-tr-sm text-[hsl(var(--text))]"
                 )}>
-                  <p className="text-sm text-[hsl(var(--text))] leading-relaxed">{msg.text}</p>
+                  <p className="text-base text-[hsl(var(--text))] leading-relaxed">{msg.text}</p>
                   <p className={cn(
-                    "text-[10px] mt-1.5 font-medium tracking-wide",
+                    "text-xs mt-1.5 font-medium tracking-wide",
                     msg.role === "agent" ? "text-[hsl(var(--primary))/0.7]" : "text-[hsl(var(--text-muted))]"
                   )}>
                     {msg.time}
@@ -262,8 +298,8 @@ function CopilotSidebar() {
           <Sparkles className="w-4 h-4 text-[hsl(var(--primary))]" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--text))]">AI 코파일럿</h3>
-          <p className="text-xs text-[hsl(var(--text-muted))]">실시간 제안</p>
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">AI 코파일럿</h3>
+          <p className="text-sm text-[hsl(var(--text-muted))]">실시간 제안</p>
         </div>
       </div>
 
@@ -281,8 +317,8 @@ function CopilotSidebar() {
             >
               <config.icon className={cn("w-4 h-4 mt-0.5 shrink-0", config.color)} />
               <div className="flex-1">
-                <span className={cn("text-[10px] font-semibold uppercase", config.color)}>{config.label}</span>
-                <p className="text-xs text-[hsl(var(--text))/0.8] mt-0.5 leading-relaxed">{suggestion.text}</p>
+                <span className={cn("text-xs font-semibold uppercase", config.color)}>{config.label}</span>
+                <p className="text-sm text-[hsl(var(--text))/0.8] mt-0.5 leading-relaxed">{suggestion.text}</p>
               </div>
             </button>
           );
@@ -311,8 +347,8 @@ function CallerInfo() {
           <User className="w-5 h-5 text-[hsl(var(--primary))]" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--text))]">{callerInfo.name}</h3>
-          <p className="text-xs text-[hsl(var(--text-muted))]">고객 정보</p>
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">{callerInfo.name}</h3>
+          <p className="text-sm text-[hsl(var(--text-muted))]">고객 정보</p>
         </div>
       </div>
 
@@ -321,11 +357,182 @@ function CallerInfo() {
           <div key={item.label} className="flex items-center gap-3 py-1.5">
             <item.icon className="w-4 h-4 text-[hsl(var(--text-muted))] shrink-0" />
             <div className="flex-1 flex items-center justify-between">
-              <span className="text-xs text-[hsl(var(--text-muted))]">{item.label}</span>
-              <span className="text-xs font-medium text-[hsl(var(--text))]">{item.value}</span>
+              <span className="text-sm text-[hsl(var(--text-muted))]">{item.label}</span>
+              <span className="text-sm font-medium text-[hsl(var(--text))]">{item.value}</span>
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── AI Call Summary Card ───────────────────────────────────────────────────
+
+interface CallSummaryData {
+  customerName: string;
+  customerPhone: string;
+  vehicleModel: string;
+  serviceType: string;
+  preferredDate: string;
+  preferredTime: string;
+  summary: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  bookingCreated?: boolean;
+}
+
+const sentimentConfig = {
+  positive: { label: '긍정적', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  neutral: { label: '중립', color: 'text-amber-400', bg: 'bg-amber-500/15' },
+  negative: { label: '부정적', color: 'text-rose-400', bg: 'bg-rose-500/15' },
+};
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+
+function CallSummaryCard({ callId, onBookingCreated }: { callId: string | null; onBookingCreated?: () => void }) {
+  const [summaryData, setSummaryData] = useState<CallSummaryData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
+  const [booked, setBooked] = useState(false);
+
+  useEffect(() => {
+    if (!callId) { setSummaryData(null); setBooked(false); return; }
+    setLoading(true);
+    setBooked(false);
+    fetch(`${SERVER_URL}/api/calls/${callId}/summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: [] }),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setSummaryData(data); })
+      .catch(() => {
+        // Mock fallback if server unreachable
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        setSummaryData({
+          customerName: '김민수',
+          customerPhone: '010-1234-5678',
+          vehicleModel: '그랜저 IG (2020)',
+          serviceType: '엔진오일 교체 + 브레이크 패드',
+          preferredDate: tomorrow,
+          preferredTime: '14:00',
+          summary: '고객이 내일 오후 2시에 엔진오일 교체와 브레이크 패드 교체를 요청하였습니다.',
+          sentiment: 'positive',
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [callId]);
+
+  const handleBook = async () => {
+    if (!callId || !summaryData) return;
+    setBooking(true);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/calls/${callId}/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(summaryData),
+      });
+      if (res.ok) {
+        setBooked(true);
+        onBookingCreated?.();
+        // Confetti for delight
+        const { default: confetti } = await import('canvas-confetti');
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+      }
+    } catch {
+      // Still mark booked for demo
+      setBooked(true);
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  if (!callId || loading) {
+    if (loading) return (
+      <div className="v0-glass rounded-xl p-6 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary))/0.2] flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-[hsl(var(--primary))] animate-spin" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-[hsl(var(--text))]">AI가 통화 내용을 분석하고 있습니다...</p>
+            <p className="text-sm text-[hsl(var(--text-muted))]">요약, 감정 분석, 예약 정보 추출 중</p>
+          </div>
+        </div>
+      </div>
+    );
+    return null;
+  }
+
+  if (!summaryData) return null;
+
+  const sConf = sentimentConfig[summaryData.sentiment];
+
+  return (
+    <div className="v0-glass rounded-xl p-6 border border-[hsl(var(--primary))/0.2] animate-in slide-in-from-bottom-4 fade-in duration-500 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))/0.05] to-transparent pointer-events-none" />
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center shadow-lg">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[hsl(var(--text))]">AI 통화 요약</h3>
+              <p className="text-sm text-[hsl(var(--text-muted))]">GPT-4o 기반 자동 분석 완료</p>
+            </div>
+          </div>
+          <span className={cn("text-sm px-2.5 py-1 rounded-full font-semibold", sConf.bg, sConf.color)}>
+            {sConf.label}
+          </span>
+        </div>
+
+        {/* Summary text */}
+        <p className="text-base text-[hsl(var(--text))/0.9] leading-relaxed mb-4 bg-[hsl(var(--bg-card))/0.5] rounded-lg p-3 border border-[hsl(var(--border))/0.3]">
+          💬 {summaryData.summary}
+        </p>
+
+        {/* Extracted info grid */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {[
+            { label: '고객명', value: summaryData.customerName, icon: User },
+            { label: '차종', value: summaryData.vehicleModel, icon: Car },
+            { label: '서비스', value: summaryData.serviceType, icon: Wrench },
+            { label: '희망 일시', value: `${summaryData.preferredDate} ${summaryData.preferredTime}`, icon: CalendarPlus },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[hsl(var(--bg-elevated))/0.5]">
+              <item.icon className="w-4 h-4 text-[hsl(var(--primary))] shrink-0" />
+              <div>
+                <p className="text-xs text-[hsl(var(--text-muted))] uppercase tracking-wider">{item.label}</p>
+                <p className="text-sm font-semibold text-[hsl(var(--text))]">{item.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* One-click booking button */}
+        {booked ? (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+            <Check className="w-5 h-5 text-emerald-400" />
+            <div>
+              <p className="text-base font-bold text-emerald-400">예약이 등록되었습니다!</p>
+              <p className="text-sm text-[hsl(var(--text-muted))]">{summaryData.preferredDate} {summaryData.preferredTime} — {summaryData.serviceType}</p>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={handleBook}
+            disabled={booking}
+            className="w-full gap-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 shadow-lg transition-all hover:scale-[1.01] text-white font-bold"
+          >
+            {booking ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 예약 생성 중...</>
+            ) : (
+              <><CalendarPlus className="w-4 h-4" /> 원클릭 예약 등록</>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -335,19 +542,35 @@ function CallerInfo() {
 
 export default function Calls() {
   const [state, setState] = useState<AgentState>("listening");
-  const [isActive, setIsActive] = useState(false); // start as false for demo manually triggering
+  const [isActive, setIsActive] = useState(false);
+  const [endedCallId, setEndedCallId] = useState<string | null>(null);
+  const [mockCallId] = useState(`mock-${Date.now()}`);
+
+  // When call ends, trigger AI summary
+  const handleSetActive = (active: boolean) => {
+    if (!active && isActive) {
+      // Call just ended — show summary
+      setEndedCallId(mockCallId);
+    }
+    if (active) {
+      setEndedCallId(null);
+    }
+    setIsActive(active);
+  };
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 h-screen overflow-y-auto pb-20">
       <div>
         <h2 className="text-xl lg:text-2xl font-bold text-[hsl(var(--text))] tracking-tight">AI 전화 에이전트</h2>
-        <p className="text-sm text-[hsl(var(--text-muted))] mt-0.5">실시간 AI 전화 응대 시스템</p>
+        <p className="text-base text-[hsl(var(--text-muted))] mt-0.5">실시간 AI 전화 응대 시스템</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 flex flex-col gap-5">
-          <AgentStatus isActive={isActive} setIsActive={setIsActive} state={state} setState={setState} />
+          <AgentStatus isActive={isActive} setIsActive={handleSetActive} state={state} setState={setState} />
           <Transcript isActive={isActive} />
+          {/* AI Summary Card — appears after call ends */}
+          {endedCallId && <CallSummaryCard callId={endedCallId} />}
         </div>
         <div className="flex flex-col gap-5 sticky top-6">
           <CallerInfo />
