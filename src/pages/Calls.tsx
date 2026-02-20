@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Phone, Bot, User, Sparkles, TrendingUp, FileText, CalendarPlus, Car, Calendar, Wrench, DollarSign, Check } from "lucide-react";
+import { Mic, MicOff, Phone, Bot, User, Sparkles, TrendingUp, FileText, CalendarPlus, Car, Calendar, Wrench, DollarSign, Check, ChevronRight, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { transcriptMessages, callerInfo, formatWon } from "@/lib/mock-data";
 
@@ -685,6 +687,194 @@ function CallSummaryCard({ callId, onConfirm, onBookingCreated }: {
   );
 }
 
+// ─── Call History Module ──────────────────────────────────────────────────────
+
+function CallHistory() {
+  const [calls, setCalls] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCall, setSelectedCall] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/calls`)
+      .then(r => r.ok ? r.json() : { calls: [] })
+      .then(d => {
+        // Fallback demo data if DB is empty
+        const list = d?.calls?.length > 0 ? d.calls : [
+          {
+            id: 'mock-history-1',
+            startedAt: new Date(Date.now() - 3600000).toISOString(),
+            callerName: '김민수',
+            status: 'completed',
+            durationSec: 142,
+            summary: '오전 10시 그랜저 엔진오일 예약 확정 완료.',
+            transcript: [
+              { role: 'caller', text: '오전 10시 엔진오일 교체 가능한가요?', time: '09:00' },
+              { role: 'agent', text: '네 가능합니다. 예약 확정해드릴까요?', time: '09:00' },
+              { role: 'caller', text: '방문하겠습니다. 비용은 어떻게 되나요?', time: '09:00' },
+              { role: 'agent', text: '동일하게 8만 5천원 안내해드립니다.', time: '09:01' },
+            ],
+            booking: { date: '2025-10-15', service: '엔진오일', price: '85,000원' }
+          },
+          {
+            id: 'mock-history-2',
+            startedAt: new Date(Date.now() - 86400000).toISOString(),
+            callerName: '이영희',
+            status: 'completed',
+            durationSec: 89,
+            summary: '타이어 마모도 상담. 다음 달 방문 예정.',
+            transcript: [
+              { role: 'caller', text: '타이어 교체 얼마에요?', time: '14:00' },
+              { role: 'agent', text: '차종이 어떻게 되시나요? 기본형은 15만원선입니다.', time: '14:00' },
+            ],
+            booking: null
+          }
+        ];
+        setCalls(list);
+        if (list.length > 0) setSelectedCall(list[0]);
+      })
+      .catch()
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="p-10 text-center"><Sparkles className="w-5 h-5 animate-spin mx-auto text-[hsl(var(--primary))]" /></div>;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-[calc(100vh-140px)]">
+      {/* List */}
+      <div className="v0-glass rounded-xl flex flex-col overflow-hidden max-h-full">
+        <div className="p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-elevated))] sticky top-0 z-10">
+          <h3 className="text-base font-semibold text-[hsl(var(--text))]">지난 통화 내역</h3>
+          <p className="text-xs text-[hsl(var(--text-muted))] mt-0.5">총 {calls.length}건의 통화</p>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col p-2 gap-1 pb-4">
+            {calls.map((c: any) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCall(c)}
+                className={cn(
+                  "flex flex-col text-left p-3 rounded-lg transition-all border outline-none",
+                  selectedCall?.id === c.id
+                  ? "bg-[hsl(var(--primary))/0.1] border-[hsl(var(--primary))/0.3]"
+                  : "bg-transparent border-transparent hover:bg-[hsl(var(--bg-elevated))] hover:border-[hsl(var(--border))]"
+                )}
+              >
+                <div className="flex justify-between items-center w-full mb-1">
+                  <span className="font-semibold text-[hsl(var(--text))] text-sm flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    {c.callerName || '미확인 고객'}
+                  </span>
+                  <span className="text-xs text-[hsl(var(--text-muted))]">
+                    {new Date(c.startedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-xs text-[hsl(var(--text-muted))] line-clamp-1 mb-1.5">
+                  {c.summary || '요약 정보 없음'}
+                </p>
+                <div className="flex gap-2 text-[10px] uppercase font-bold text-[hsl(var(--primary))/0.8]">
+                  {c.durationSec ? `${c.durationSec}초` : '통화 기록'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Detail */}
+      <div className="lg:col-span-2 v0-glass rounded-xl p-5 flex flex-col h-full bg-[hsl(var(--bg-elevated))/0.5]">
+        {selectedCall ? (
+          <>
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[hsl(var(--border))] shrink-0">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] p-[2px]">
+                <div className="w-full h-full bg-[hsl(var(--bg-card))] rounded-full flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-[hsl(var(--primary))]" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-[hsl(var(--text))] flex items-center gap-2">
+                  {selectedCall.callerName} 통화 분석 (AI 디펜더)
+                </h2>
+                <p className="text-sm text-[hsl(var(--text-muted))]">
+                  {new Date(selectedCall.startedAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 shrink-0">
+              <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border))] rounded-lg p-4">
+                <h4 className="text-xs font-bold text-[hsl(var(--primary))] uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" /> AI 요약 결과
+                </h4>
+                <p className="text-sm text-[hsl(var(--text))] leading-relaxed">
+                  {selectedCall.summary || '통화 요약이 제공되지 않았습니다.'}
+                </p>
+              </div>
+              
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <CalendarPlus className="w-3.5 h-3.5" /> 연동된 예약/오더
+                </h4>
+                {selectedCall.booking ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-emerald-400">{selectedCall.booking.date}</p>
+                    <p className="text-sm text-[hsl(var(--text))]">{selectedCall.booking.service}</p>
+                    <p className="text-sm text-[hsl(var(--text-muted))]">저장된 금액: {selectedCall.booking.price}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[hsl(var(--text-muted))]">이 통화에서 생성된 예약 정보가 없습니다.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0">
+              <h4 className="text-sm font-semibold text-[hsl(var(--text))] mb-2 shrink-0 flex items-center gap-1.5">
+                <History className="w-4 h-4 text-[hsl(var(--primary))]" />
+                전체 녹취록 (Cross-check)
+              </h4>
+              <ScrollArea className="flex-1 bg-[hsl(var(--bg-card))] border border-[hsl(var(--border))] rounded-lg p-4 custom-scrollbar">
+                <div className="flex flex-col gap-3 pb-4">
+                  {(selectedCall.transcript || []).map((msg: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className={cn(
+                        "flex gap-3",
+                        msg.role === "agent" ? "flex-row" : "flex-row-reverse"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                        msg.role === "agent" ? "bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))]" : "bg-[hsl(var(--bg-elevated))]"
+                      )}>
+                        {msg.role === "agent" ? (
+                          <Bot className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-[hsl(var(--text-muted))]" />
+                        )}
+                      </div>
+                      <div className={cn(
+                        "max-w-[85%] rounded-xl px-3 py-2 text-sm shadow-sm",
+                        msg.role === "agent"
+                          ? "bg-[hsl(var(--primary))/0.05] border border-[hsl(var(--primary))/0.1] rounded-tl-sm text-[hsl(var(--text))]"
+                          : "bg-[hsl(var(--bg-elevated))] border border-[hsl(var(--border))] rounded-tr-sm text-[hsl(var(--text))]"
+                      )}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center text-[hsl(var(--text-muted))]">
+            좌측에서 통화 내역을 선택해주세요.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function Calls() {
@@ -718,37 +908,56 @@ export default function Calls() {
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 h-screen overflow-y-auto pb-20">
-      <div>
-        <h2 className="text-xl lg:text-2xl font-bold text-[hsl(var(--text))] tracking-tight">AI 전화 에이전트</h2>
-        <p className="text-base text-[hsl(var(--text-muted))] mt-0.5">실시간 AI 전화 응대 시스템</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl lg:text-2xl font-bold text-[hsl(var(--text))] tracking-tight">AI 전화 에이전트</h2>
+          <p className="text-base text-[hsl(var(--text-muted))] mt-0.5">실시간 통화 응대 및 AI 크로스체크 내역</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-        <div className="lg:col-span-2 flex flex-col gap-5">
-          <AgentStatus
-            isActive={isActive}
-            onStart={handleStart}
-            onEnd={handleEnd}
-            state={state}
-            setState={setState}
-          />
-          <Transcript
-            isActive={isActive}
-            callEnded={callEnded}
-            onComplete={handleTranscriptComplete}
-            onMessageShown={setMessageCount}
-          />
-        </div>
-        <div className="flex flex-col gap-5 sticky top-6">
-          <CallerInfo />
-          <CopilotSidebar
-            isActive={isActive}
-            callEnded={callEnded}
-            callId={isActive ? callId : null}
-            messageCount={messageCount}
-          />
-        </div>
-      </div>
+      <Tabs defaultValue="live" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="live" className="gap-2 font-semibold">
+            <Mic className="w-4 h-4" /> 실시간 대시보드
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2 font-semibold">
+            <History className="w-4 h-4" /> 통화 기록 및 팩트체크
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="live" className="mt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+            <div className="lg:col-span-2 flex flex-col gap-5">
+              <AgentStatus
+                isActive={isActive}
+                onStart={handleStart}
+                onEnd={handleEnd}
+                state={state}
+                setState={setState}
+              />
+              <Transcript
+                isActive={isActive}
+                callEnded={callEnded}
+                onComplete={handleTranscriptComplete}
+                onMessageShown={setMessageCount}
+              />
+            </div>
+            <div className="flex flex-col gap-5 sticky top-6">
+              <CallerInfo />
+              <CopilotSidebar
+                isActive={isActive}
+                callEnded={callEnded}
+                callId={isActive ? callId : null}
+                messageCount={messageCount}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <CallHistory />
+        </TabsContent>
+      </Tabs>
 
       {/* 통화 종료 후 보텀시트 팝업 — stays until user confirms */}
       {modalOpen && (
