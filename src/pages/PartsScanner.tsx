@@ -35,8 +35,13 @@ export default function PartsScanner() {
 
     const initCamera = async () => {
       try {
-        const constraints = { video: { facingMode: 'environment' } };
-        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        let mediaStream: MediaStream;
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        } catch (e) {
+          console.warn("Back camera failed, trying any available camera...", e);
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
         
         if (!isActive) {
           mediaStream.getTracks().forEach(track => track.stop());
@@ -79,9 +84,9 @@ export default function PartsScanner() {
             }
           }, 500);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Camera Error:', err);
-        setError('카메라를 실행할 수 없습니다. 권한을 확인해주세요.');
+        setError(`카메라 오류: ${err?.message || '권한을 설정해주세요.'}`);
       }
     };
 
@@ -245,20 +250,20 @@ export default function PartsScanner() {
             <canvas ref={canvasRef} className="hidden" />
             
             {/* Overlay UI */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center -translate-y-10">
               <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative">
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500"></div>
                 <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500"></div>
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500"></div>
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500"></div>
               </div>
-              <p className="absolute bottom-32 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full">
+              <p className="absolute -bottom-12 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full">
                 부품을 사각형 안에 맞춰주세요
               </p>
             </div>
 
             {/* Capture Button */}
-            <div className="absolute bottom-8 w-full flex justify-center z-20">
+            <div className="absolute bottom-28 w-full flex justify-center z-20">
               <button 
                 onClick={captureAndAnalyze}
                 disabled={isAnalyzing}
@@ -464,7 +469,7 @@ export default function PartsScanner() {
       </div>
 
       {error && (
-        <div className="absolute bottom-20 left-4 right-4 bg-red-900/90 text-white p-3 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-bottom-2">
+        <div className="absolute bottom-40 left-4 right-4 bg-red-900/90 text-white p-3 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-bottom-2 z-50">
           <span className="text-sm">{error}</span>
           <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
         </div>
