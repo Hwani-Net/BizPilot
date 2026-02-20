@@ -1,6 +1,6 @@
 # 🎤 BizPilot 해커톤 발표 대본 및 시연 시나리오 (5분)
 
-🟢 **라이브 데모 (Vercel)**: [https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app](https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app)
+🟢 **라이브 데모 (Vercel)**: [https://bizpilot-demo-app.vercel.app](https://bizpilot-demo-app.vercel.app)
 🟢 **백엔드 API (Render)**: [https://bizpilot-server.onrender.com](https://bizpilot-server.onrender.com)
 
 ## 1. 도입 (Intro & Hook) - 1분
