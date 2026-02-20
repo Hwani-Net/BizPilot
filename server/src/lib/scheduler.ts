@@ -15,7 +15,7 @@ import {
   insertRceLog,
   type MaintenanceStatus,
   type Vehicle,
-} from './db.js';
+} from './db-supabase.js';
 
 type ScheduledTask = ReturnType<typeof cron.schedule>;
 let schedulerTask: ScheduledTask | null = null;
@@ -89,7 +89,7 @@ export async function runRceCampaign(): Promise<{ sent: number; total: number }>
   console.log('[RCE] 🚗 Mileage-based campaign started');
 
   const threshold = parseInt(process.env.RCE_THRESHOLD_KM ?? '1500', 10);
-  const targets = getVehiclesDueForAlert(threshold);
+  const targets = await getVehiclesDueForAlert(threshold);
 
   console.log(`[RCE] ${targets.length} vehicle(s) due for notification`);
 
@@ -98,11 +98,11 @@ export async function runRceCampaign(): Promise<{ sent: number; total: number }>
     const message = buildRceMessage(vehicle, dueItems, estimatedKm);
     const result = await sendRceSms(vehicle.ownerPhone, message);
 
-    insertRceLog({
+    await insertRceLog({
       vehicleId: vehicle.id,
       phone: vehicle.ownerPhone,
       message,
-      itemsAlerted: dueItems.map(i => i.itemKey),
+      itemsAlerted: dueItems.map((i: MaintenanceStatus) => i.itemKey),
       status: result.ok ? 'sent' : 'failed',
       twilioSid: result.sid,
     });
