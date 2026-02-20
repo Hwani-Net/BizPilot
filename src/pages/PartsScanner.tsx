@@ -37,6 +37,16 @@ export default function PartsScanner() {
     return () => stopCamera();
   }, [mode]);
 
+  // Ensure stream gets attached to video element properly to prevent initial freeze
+  useEffect(() => {
+    if (mode === 'camera' && videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current?.play().catch(e => console.error("Video play failed:", e));
+      };
+    }
+  }, [mode, stream]);
+
   const startCamera = async () => {
     try {
       const constraints = { 
@@ -44,12 +54,6 @@ export default function PartsScanner() {
       };
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(e => console.error("Video play failed:", e));
-        };
-      }
     } catch (err) {
       console.error('Camera Error:', err);
       setError('카메라를 실행할 수 없습니다. 권한을 확인해주세요.');
@@ -165,7 +169,7 @@ export default function PartsScanner() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-white relative overflow-hidden">
+    <div className="absolute inset-0 flex flex-col bg-gray-900 text-white overflow-hidden">
       {/* Header Tabs */}
       <div className="flex justify-around p-4 bg-gray-900 z-10">
         <button 
