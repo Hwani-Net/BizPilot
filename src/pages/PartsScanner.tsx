@@ -18,7 +18,7 @@ interface Part {
 export default function PartsScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [, setStream] = useState<MediaStream | null>(null);
   const [mode, setMode] = useState<'camera' | 'search' | 'vin'>('camera');
   const [query, setQuery] = useState('');
   const [vinInput, setVinInput] = useState('');
@@ -29,84 +29,79 @@ export default function PartsScanner() {
 
   // Camera Setup
   useEffect(() => {
-    if (mode === 'camera') {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-    return () => stopCamera();
-  }, [mode]);
-
-  // Ensure stream gets attached to video element properly to prevent initial freeze
-  useEffect(() => {
+    let isActive = true;
     let playInterval: number;
     let fallbackTimeout: number;
 
-    if (mode === 'camera' && videoRef.current && stream) {
-      const video = videoRef.current;
-      video.srcObject = stream;
-      
-      // Explicitly set DOM attributes for strict mobile browsers
-      video.setAttribute('autoplay', '');
-      video.setAttribute('muted', '');
-      video.setAttribute('playsinline', '');
-      video.muted = true;
-
-      const attemptPlay = async () => {
-        try {
-          if (video.paused) {
-            await video.play();
-          }
-          // Force a CSS repaint to fix Android rendering freeze on the first frame
-          if (video.style) {
-            video.style.transform = 'scale(1.0001)';
-            fallbackTimeout = window.setTimeout(() => {
-              if (video.style) video.style.transform = 'scale(1)';
-            }, 50);
-          }
-        } catch (err) {
-          console.error('Autoplay prevented:', err);
+    const initCamera = async () => {
+      try {
+        const constraints = { video: { facingMode: 'environment' } };
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        if (!isActive) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          return;
         }
-      };
 
-      video.onloadedmetadata = attemptPlay;
-      
-      // Force play check every 500ms until successful
-      playInterval = window.setInterval(() => {
-        if (!video.paused) {
-          clearInterval(playInterval);
-        } else {
-          attemptPlay();
+        setStream(mediaStream);
+
+        if (videoRef.current) {
+          const video = videoRef.current;
+          video.srcObject = mediaStream;
+          video.setAttribute('autoplay', '');
+          video.setAttribute('muted', '');
+          video.setAttribute('playsinline', '');
+          video.muted = true;
+
+          const attemptPlay = async () => {
+            try {
+              if (video.paused) {
+                await video.play();
+              }
+              if (video.style) {
+                video.style.transform = 'scale(1.0001)';
+                fallbackTimeout = window.setTimeout(() => {
+                  if (video.style) video.style.transform = 'scale(1)';
+                }, 50);
+              }
+            } catch (err) {
+              console.error('Autoplay prevented:', err);
+            }
+          };
+
+          video.onloadedmetadata = attemptPlay;
+          
+          playInterval = window.setInterval(() => {
+            if (!video.paused) {
+              clearInterval(playInterval);
+            } else {
+              attemptPlay();
+            }
+          }, 500);
         }
-      }, 500);
-    }
-    
-    return () => {
-      if (playInterval) clearInterval(playInterval);
-      if (fallbackTimeout) clearTimeout(fallbackTimeout);
+      } catch (err) {
+        console.error('Camera Error:', err);
+        setError('카메라를 실행할 수 없습니다. 권한을 확인해주세요.');
+      }
     };
-  }, [mode, stream]);
 
-  const startCamera = async () => {
-    try {
-      // Simplify constraints for maximum compatibility on Android OS
-      const constraints = { 
-        video: { facingMode: 'environment' } 
-      };
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
-    } catch (err) {
-      console.error('Camera Error:', err);
-      setError('카메라를 실행할 수 없습니다. 권한을 확인해주세요.');
+    if (mode === 'camera') {
+      initCamera();
     }
-  };
 
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  };
+    return () => {
+      isActive = false;
+      setStream(prev => {
+        if (prev) prev.getTracks().forEach(track => track.stop());
+        return null;
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (playInterval) window.clearInterval(playInterval);
+      if (fallbackTimeout) window.clearTimeout(fallbackTimeout);
+    };
+  }, [mode]);
 
   // Capture & Analyze
   const captureAndAnalyze = async () => {
