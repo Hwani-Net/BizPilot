@@ -966,15 +966,17 @@ export default function Calls() {
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={handleConfirm}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-6 duration-300">
-            <div className="max-w-2xl mx-auto">
-              <div className="flex items-center justify-between px-4 py-2 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-6 animate-in slide-in-from-bottom-6 duration-300">
+            <div className="max-w-2xl mx-auto flex flex-col gap-2 max-h-[80vh] overflow-y-auto">
+              {/* Card renders FIRST so it stays visible above the fold */}
+              <CallSummaryCard callId={callId} onConfirm={handleConfirm} />
+              {/* Info banner below */}
+              <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 shrink-0">
                 <span className="text-amber-400 font-medium text-sm">☎️ 새 전화가 오면 현재 내용이 자동 승인됩니다</span>
                 <Button size="sm" onClick={handleConfirm} variant="ghost" className="text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text))] h-7 px-2 shrink-0">
                   닫기 ×
                 </Button>
               </div>
-              <CallSummaryCard callId={callId} onConfirm={handleConfirm} />
             </div>
           </div>
         </>
