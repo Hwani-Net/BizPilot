@@ -1,5 +1,8 @@
 # 🎤 BizPilot 해커톤 발표 대본 및 시연 시나리오 (5분)
 
+🟢 **라이브 데모 (Vercel)**: [https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app](https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app)
+🟢 **백엔드 API (Render)**: [https://bizpilot-server.onrender.com](https://bizpilot-server.onrender.com)
+
 ## 1. 도입 (Intro & Hook) - 1분
 **"안녕하세요, 소상공인의 잃어버린 매출을 찾아주는 AI 백오피스, 비즈파일럿(BizPilot) 팀입니다."**
 

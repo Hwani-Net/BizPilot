@@ -6,6 +6,13 @@ BizPilot은 AI 전화 에이전트, 실시간 예약 관리, 영수증 OCR 회�
 
 ---
 
+## 🟢 Live Demo (해커톤 심사용)
+- **Frontend (Vercel)**: [https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app](https://bizpilot-jdah7xqrg-stayicon-gmailcoms-projects.vercel.app)
+- **Backend (Render)**: [https://bizpilot-server.onrender.com](https://bizpilot-server.onrender.com)
+- **테스트 방법**: 데모 URL 접속 시 100% 동작하는 대시보드와 UI/UX를 즉시 확인하실 수 있습니다. (데모 데이터 자동 주입 완료)
+
+---
+
 ## ✨ 핵심 기능
 
 | 기능 | 설명 |
