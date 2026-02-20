@@ -133,11 +133,10 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
           <div className="flex gap-2">
             <Button
               onClick={handleToggle}
-              variant={isActive ? "destructive" : "default"}
-              className={cn("gap-2 shadow-sm transition-all", isActive ? "hover:bg-red-600" : "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90")}
+              className={cn("gap-2 shadow-sm transition-all text-white", isActive ? "bg-rose-500 hover:bg-rose-600" : "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90")}
             >
               {isActive ? <Phone className="w-4 h-4 rotate-[135deg]" /> : <Phone className="w-4 h-4" />}
-              {isActive ? "통화 종료" : "시뮬레이션 시작"}
+              {isActive ? "시뮬레이션 종료" : "시뮬레이션 시작"}
             </Button>
           </div>
         </div>
@@ -156,7 +155,7 @@ function AgentStatus({ isActive, setIsActive, state, setState }: any) {
 
 // ─── Transcript Component ───────────────────────────────────────────────────
 
-function Transcript({ isActive }: { isActive: boolean }) {
+function Transcript({ isActive, onComplete }: { isActive: boolean; onComplete?: () => void }) {
   const [visibleCount, setVisibleCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -170,7 +169,9 @@ function Transcript({ isActive }: { isActive: boolean }) {
     let currentAudio: HTMLAudioElement | null = null;
 
     const playStep = (index: number) => {
-      if (isCancelled || index >= transcriptMessages.length) {
+      if (isCancelled) return;
+      if (index >= transcriptMessages.length) {
+        onComplete?.();
         return;
       }
       
@@ -579,7 +580,10 @@ export default function Calls() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 flex flex-col gap-5">
           <AgentStatus isActive={isActive} setIsActive={handleSetActive} state={state} setState={setState} />
-          <Transcript isActive={isActive} />
+          <Transcript isActive={isActive} onComplete={() => {
+            handleSetActive(false);
+            setState("idle");
+          }} />
           {/* AI Summary Card — appears after call ends */}
           {endedCallId && <CallSummaryCard callId={endedCallId} />}
         </div>
