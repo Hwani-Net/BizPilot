@@ -256,55 +256,65 @@ export default function PartsScanner() {
             />
             <canvas ref={canvasRef} className="hidden" />
             
-            {/* Premium Overlay: Sci-fi HUD Style */}
+            {/* Premium Overlay: Sci-fi HUD Style with Outside Blur */}
             <div className="absolute inset-0 flex flex-col z-10 pb-20">
-              {/* Subtle Scanning Grid/Lines Background Overlay */}
-              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+              {/* Subtle Scanning Grid/Lines Background Overlay (applies to entire screen) */}
+              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] z-0"></div>
 
-              {/* Top spacer */}
-              <div className="flex-[1] min-h-0" />
+              {/* Top blurred flap */}
+              <div className="flex-[1] min-h-0 w-full backdrop-blur-[6px] bg-black/40 z-10" />
 
-              {/* Center Frame Container */}
-              <div className="flex flex-col items-center shrink-0 w-full px-8 relative">
-                {/* HUD Viewfinder */}
-                <div className="w-full aspect-square max-w-[320px] rounded-2xl relative pointer-events-none border border-white/10 shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] bg-black/10 backdrop-blur-[2px]">
+              {/* Middle row: Left blur, Clear center, Right blur */}
+              <div className="flex shrink-0 w-full z-10">
+                <div className="flex-1 backdrop-blur-[6px] bg-black/40"></div>
+                
+                {/* Clear Center Viewfinder */}
+                <div className="w-[calc(100%-4rem)] max-w-[320px] aspect-square relative flex-shrink-0">
+                  {/* Subtle inner shadow to frame the lens */}
+                  <div className="absolute inset-0 border border-white/10 shadow-[inset_0_0_30px_rgba(0,0,0,0.3)] pointer-events-none"></div>
+
                   {/* Neon Cyan Corner Brackets */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-cyan-400 rounded-tl-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-cyan-400 rounded-tr-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-cyan-400 rounded-bl-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-cyan-400 rounded-br-xl drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-cyan-400 rounded-tl-2xl drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-cyan-400 rounded-tr-2xl drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-cyan-400 rounded-bl-2xl drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-cyan-400 rounded-br-2xl drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all duration-700"></div>
                   
                   {/* Subtle center crosshair */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                    <div className="w-6 h-px bg-cyan-400"></div>
-                    <div className="absolute h-6 w-px bg-cyan-400"></div>
+                    <div className="w-8 h-px bg-cyan-400"></div>
+                    <div className="absolute h-8 w-px bg-cyan-400"></div>
                   </div>
                 </div>
-                
-                {/* Helper text - Glassmorphic Pill */}
-                <p className="mt-6 text-white text-sm font-medium tracking-wide bg-black/40 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full pointer-events-none shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
-                  부품을 사각형 안에 맞춰주세요
-                </p>
+
+                <div className="flex-1 backdrop-blur-[6px] bg-black/40"></div>
               </div>
 
-              {/* Bottom container: Premium glowing capture button */}
-              <div className="flex-[1] min-h-0 flex items-center justify-center relative">
-                <button 
-                  onClick={captureAndAnalyze}
-                  disabled={isAnalyzing}
-                  className="relative group w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-50"
-                  aria-label="Capture part"
-                >
-                  {/* Frosted Glass Outer Ring */}
-                  <div className="absolute inset-x-0 inset-y-0 rounded-full border-[3px] border-white/80 bg-white/10 backdrop-blur-xl shadow-[0_0_15px_rgba(255,255,255,0.15)] group-hover:border-white transition-colors duration-300"></div>
-                  
-                  {isAnalyzing ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-red-500 relative z-10" />
-                  ) : (
-                    /* Glowing Inner Ruby */
-                    <div className="w-14 h-14 bg-red-600 rounded-full relative z-10 transition-all duration-300 group-hover:bg-red-500 group-active:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.8)] inset-shadow-sm"></div>
-                  )}
-                </button>
+              {/* Bottom blurred flap */}
+              <div className="flex-[1] min-h-0 w-full backdrop-blur-[6px] bg-black/40 flex flex-col items-center pt-6 z-10 pb-6">
+                {/* Helper text - Glassmorphic Pill */}
+                <p className="text-white text-sm font-medium tracking-wide bg-black/40 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full pointer-events-none shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
+                  부품을 사각형 안에 맞춰주세요
+                </p>
+
+                {/* Bottom container: Premium glowing capture button */}
+                <div className="flex-1 w-full flex items-center justify-center relative">
+                  <button 
+                    onClick={captureAndAnalyze}
+                    disabled={isAnalyzing}
+                    className="relative group w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-50"
+                    aria-label="Capture part"
+                  >
+                    {/* Frosted Glass Outer Ring */}
+                    <div className="absolute inset-x-0 inset-y-0 rounded-full border-[3px] border-white/80 bg-white/10 backdrop-blur-xl shadow-[0_0_15px_rgba(255,255,255,0.15)] group-hover:border-white transition-colors duration-300"></div>
+                    
+                    {isAnalyzing ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-red-500 relative z-10" />
+                    ) : (
+                      /* Glowing Inner Ruby */
+                      <div className="w-14 h-14 bg-red-600 rounded-full relative z-10 transition-all duration-300 group-hover:bg-red-500 group-active:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.8)] inset-shadow-sm"></div>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
