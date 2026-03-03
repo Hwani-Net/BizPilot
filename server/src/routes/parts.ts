@@ -18,7 +18,7 @@ export async function partsRoutes(app: FastifyInstance) {
 
     // If no results, ask AI to interpret the user query and suggest keywords
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'You are an auto parts expert. Extract key search terms (part name, car model) from the user query. Output JSON: { "keywords": ["term1", "term2"] }' },
         { role: 'user', content: q }
@@ -50,7 +50,7 @@ export async function partsRoutes(app: FastifyInstance) {
 
     // Call GPT-4o Vision
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',

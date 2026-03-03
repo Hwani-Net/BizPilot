@@ -22,7 +22,7 @@ services:
       - key: TWILIO_PHONE_NUMBER
         sync: false
       - key: AI_MODEL
-        value: gpt-4o-realtime-preview-2024-12-17
+        value: gpt-4o-mini-realtime-preview
       - key: AI_VOICE
         value: alloy
       - key: MOCK_MODE

@@ -59,7 +59,7 @@ export async function ocrRoutes(app: FastifyInstance) {
         const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
         const res = await client.chat.completions.create({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'user',
